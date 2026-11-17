@@ -142,8 +142,9 @@ main{max-width:980px;margin:0 auto;padding:16px 16px calc(28px + var(--safe-b))}
   <div class="card">
     <div class="brand">KSC USA</div>
     <h2>레시피북</h2>
-    <p>비밀번호를 입력하세요. 한 번 입력하면 이 기기에 기억됩니다.</p>
+    <p>이름과 개인 비밀번호를 입력하세요. 한 번 입력하면 이 기기에 기억됩니다.<br><span style="color:var(--muted);font-size:12px">※ 열람 기록(이름·시간·기기)이 남습니다.</span></p>
     <form id="loginForm">
+      <input id="nm" type="text" autocomplete="username" placeholder="이름 (예: 홍길동)" style="margin-bottom:8px">
       <input id="pw" type="password" autocomplete="current-password" placeholder="비밀번호">
       <button type="submit" id="loginBtn">열기</button>
       <div class="err" id="loginErr"></div>
@@ -164,25 +165,33 @@ main{max-width:980px;margin:0 auto;padding:16px 16px calc(28px + var(--safe-b))}
 
 <script>
 "use strict";
-const LS_KEY = "ksc_recipe_key", LS_SALT = "ksc_recipe_salt";
-let KEY = null, DATA = null, META = null;
+const LS_KEK = "ksc_kek", LS_NAME = "ksc_name";
+let KEY = null, DATA = null, META = null, USER = null;
 const imgCache = new Map();
 
 /* ---------- 암호 ---------- */
 const b64 = { enc: b => btoa(String.fromCharCode(...new Uint8Array(b))), dec: s => Uint8Array.from(atob(s), c => c.charCodeAt(0)) };
 const hex2buf = h => new Uint8Array(h.match(/../g).map(x => parseInt(x, 16)));
-async function deriveRaw(pw, meta) {
+async function deriveRaw(pw, saltHex, iters) {
   const base = await crypto.subtle.importKey("raw", new TextEncoder().encode(pw), "PBKDF2", false, ["deriveBits"]);
-  return crypto.subtle.deriveBits({ name: "PBKDF2", hash: "SHA-256", salt: hex2buf(meta.salt), iterations: meta.iterations }, base, 256);
+  return crypto.subtle.deriveBits({ name: "PBKDF2", hash: "SHA-256", salt: hex2buf(saltHex), iterations: iters }, base, 256);
 }
 const importAes = raw => crypto.subtle.importKey("raw", raw, "AES-GCM", false, ["decrypt"]);
-async function decrypt(buf) {
-  const u = new Uint8Array(buf);
-  return crypto.subtle.decrypt({ name: "AES-GCM", iv: u.slice(0, 12) }, KEY, u.slice(12));
+const aesDec = (key, u) => crypto.subtle.decrypt({ name: "AES-GCM", iv: u.slice(0, 12) }, key, u.slice(12));
+async function decrypt(buf) { return aesDec(KEY, new Uint8Array(buf)); }
+const normName = n => n.replace(/\s+/g, "").toLowerCase();
+async function nameId(name) {
+  const h = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(META.nameSalt + normName(name)));
+  return [...new Uint8Array(h)].map(b => b.toString(16).padStart(2, "0")).join("").slice(0, 16);
 }
-async function checkKey(key, meta) {
-  try { const u = b64.dec(meta.check); await crypto.subtle.decrypt({ name: "AES-GCM", iv: u.slice(0, 12) }, key, u.slice(12)); return true; }
-  catch { return false; }
+// 사용자 열쇠(KEK)로 이 사용자 몫의 데이터 열쇠(DK)를 푼다. 명단에서 빠졌거나 비번이 바뀌면 실패.
+async function unwrapFor(name, kekRaw) {
+  const ent = META.users && META.users[await nameId(name)];
+  if (!ent) return null;
+  try {
+    const inner = JSON.parse(new TextDecoder().decode(await aesDec(await importAes(kekRaw), b64.dec(ent.wrap))));
+    return { key: await importAes(hex2buf(inner.dk)), name: inner.name };
+  } catch { return null; }
 }
 const store = {
   get(k) { try { return localStorage.getItem(k); } catch { return null; } },
@@ -197,41 +206,82 @@ async function boot() {
   catch { toast("오프라인 — 저장된 자료로 엽니다"); META = JSON.parse(store.get("ksc_meta") || "null"); }
   if (!META) { document.body.innerHTML = "<p style='padding:30px'>자료를 불러오지 못했습니다. 인터넷 연결을 확인하세요.</p>"; return; }
   store.set("ksc_meta", JSON.stringify(META));
-  const saved = store.get(LS_KEY);
-  if (saved && store.get(LS_SALT) === META.salt) {
-    const k = await importAes(b64.dec(saved));
-    if (await checkKey(k, META)) { KEY = k; return start(); }
+  store.del("ksc_recipe_key"); store.del("ksc_recipe_salt");  // 예전 공용 비밀번호 방식 흔적 정리
+  const kek = store.get(LS_KEK), nm = store.get(LS_NAME);
+  if (kek && nm) {
+    const r = await unwrapFor(nm, b64.dec(kek));
+    if (r) { KEY = r.key; USER = r.name; return start("앱 열기"); }
+    store.del(LS_KEK);
+    document.getElementById("loginErr").textContent = "접속 권한이 바뀌었습니다. 다시 로그인하세요.";
   }
+  if (nm) document.getElementById("nm").value = nm;
   showLogin();
 }
 function showLogin() {
   document.getElementById("login").classList.remove("hidden");
   document.getElementById("app").classList.add("hidden");
-  setTimeout(() => document.getElementById("pw").focus(), 50);
+  setTimeout(() => document.getElementById(document.getElementById("nm").value ? "pw" : "nm").focus(), 50);
 }
 document.getElementById("loginForm").addEventListener("submit", async e => {
   e.preventDefault();
   const btn = document.getElementById("loginBtn"), err = document.getElementById("loginErr");
   btn.disabled = true; btn.textContent = "확인 중…"; err.textContent = "";
   try {
-    const raw = await deriveRaw(document.getElementById("pw").value, META);
-    const k = await importAes(raw);
-    if (!(await checkKey(k, META))) { err.textContent = "비밀번호가 맞지 않습니다."; return; }
-    store.set(LS_KEY, b64.enc(raw)); store.set(LS_SALT, META.salt);
-    KEY = k; document.getElementById("login").classList.add("hidden"); start();
+    const name = document.getElementById("nm").value.trim();
+    if (!name) { err.textContent = "이름을 입력하세요."; return; }
+    const ent = META.users && META.users[await nameId(name)];
+    if (!ent) { err.textContent = "등록되지 않은 이름입니다. 관리자에게 문의하세요."; return; }
+    const raw = await deriveRaw(document.getElementById("pw").value, ent.salt, META.iterations);
+    const r = await unwrapFor(name, raw);
+    if (!r) { err.textContent = "비밀번호가 맞지 않습니다."; return; }
+    store.set(LS_KEK, b64.enc(raw)); store.set(LS_NAME, name);
+    KEY = r.key; USER = r.name; document.getElementById("login").classList.add("hidden"); start("로그인");
   } catch (x) { err.textContent = "오류: " + x.message; }
   finally { btn.disabled = false; btn.textContent = "열기"; }
 });
 
-async function start() {
+async function start(ev) {
   document.getElementById("app").classList.remove("hidden");
   const res = await fetch("data.bin?v=" + META.ver);
   DATA = JSON.parse(new TextDecoder().decode(await decrypt(await res.arrayBuffer())));
   const last = store.get("ksc_seen_ver");
   if (last && last !== META.ver) toast("새 레시피 자료로 업데이트되었습니다 (" + DATA.meta.builtAt + ")");
   store.set("ksc_seen_ver", META.ver);
+  logEvent(ev, "");
   route();
 }
+
+/* ---------- 접속 기록 (구글시트) ---------- */
+function device() {
+  const u = navigator.userAgent;
+  const os = /iPhone/.test(u) ? "iPhone" : /iPad/.test(u) ? "iPad" : /Android/.test(u) ? "Android" : /Windows/.test(u) ? "Windows" : /Mac/.test(u) ? "Mac" : "기타";
+  const br = /SamsungBrowser/.test(u) ? "삼성인터넷" : /KAKAOTALK/i.test(u) ? "카카오톡" : /CriOS|Chrome/.test(u) ? "Chrome" : /Safari/.test(u) ? "Safari" : "";
+  const app = matchMedia("(display-mode: standalone)").matches || navigator.standalone ? "앱" : "브라우저";
+  return [os, br, app].filter(Boolean).join(" · ");
+}
+function logEvent(event, detail) {
+  if (!DATA || !DATA.meta.logUrl || !USER) return;
+  const k = event + "|" + detail, now = Date.now();
+  logEvent.recent = logEvent.recent || {};
+  if (logEvent.recent[k] && now - logEvent.recent[k] < 5 * 60 * 1000) return;  // 같은 화면 5분 내 반복은 1번만
+  logEvent.recent[k] = now;
+  let q = []; try { q = JSON.parse(store.get("ksc_logq") || "[]"); } catch {}
+  q.push({ name: USER, event, detail, device: device(), ver: META.ver, at: new Date().toISOString() });
+  store.set("ksc_logq", JSON.stringify(q.slice(-200)));
+  flushLogs();
+}
+async function flushLogs() {
+  if (flushLogs.busy || !navigator.onLine || !DATA || !DATA.meta.logUrl) return;
+  flushLogs.busy = true;
+  try {
+    let q = []; try { q = JSON.parse(store.get("ksc_logq") || "[]"); } catch {}
+    if (!q.length) return;
+    await fetch(DATA.meta.logUrl, { method: "POST", mode: "no-cors", keepalive: true,
+      headers: { "Content-Type": "text/plain;charset=utf-8" }, body: JSON.stringify({ token: DATA.meta.logToken, rows: q }) });
+    store.set("ksc_logq", JSON.stringify(JSON.parse(store.get("ksc_logq") || "[]").slice(q.length)));
+  } catch {} finally { flushLogs.busy = false; }
+}
+window.addEventListener("online", flushLogs);
 
 /* ---------- 사진 ---------- */
 async function imgUrl(id) {
@@ -307,8 +357,12 @@ function route() {
   const v = document.getElementById("view");
   window.scrollTo(0, 0);
   if (p[0] === "list" && CATS[p[1]]) return listView(v, p[1]);
-  if (p[0] === "r" && CATS[p[1]]) return recipeView(v, p[1], +p[2], +(p[3] || 0));
-  if (p[0] === "t" && CATS[p[1]]) return tableView(v, p[1]);
+  if (p[0] === "r" && CATS[p[1]]) {
+    const r = DATA[p[1]][+p[2]];
+    if (r) logEvent(CATS[p[1]].title, recName(r));
+    return recipeView(v, p[1], +p[2], +(p[3] || 0));
+  }
+  if (p[0] === "t" && CATS[p[1]]) { logEvent("표", CATS[p[1]].title); return tableView(v, p[1]); }
   homeView(v);
 }
 
@@ -325,9 +379,9 @@ function homeView(v) {
     <div class="grid">${tile("menus", true)}${tile("lunch", true)}</div>
     <div class="sec">원가 · 전처리</div>
     <div class="grid">${tile("ingredients")}${tile("yield")}${tile("prepCost")}${tile("prepRecipes")}</div>
-    <div class="foot">원본: ${m.sources.map(esc).join("<br>")}<br>업데이트 ${esc(m.builtAt)}<br>
+    <div class="foot"><b style="color:var(--navy)">${esc(USER)}</b> 님으로 접속 중<br>원본: ${m.sources.map(esc).join("<br>")}<br>업데이트 ${esc(m.builtAt)}<br>
       <button id="logout">이 기기에서 로그아웃</button></div>`;
-  document.getElementById("logout").onclick = () => { store.del(LS_KEY); location.reload(); };
+  document.getElementById("logout").onclick = () => { logEvent("로그아웃", ""); store.del(LS_KEK); setTimeout(() => location.reload(), 300); };
 }
 const fmtMonth = s => s ? `${s.slice(0, 4)}.${s.slice(4)}` : "-";
 
