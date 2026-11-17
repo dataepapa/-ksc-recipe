@@ -378,7 +378,7 @@ function homeView(v) {
   const tile = (k, main) => `<button class="tile${main ? " main" : ""}" onclick="location.hash='#/${CATS[k].kind === "table" ? "t" : "list"}/${k}'">
       <div><div class="t">${CATS[k].title}</div><div class="e">${CATS[k].en}</div></div><div class="n">${count(k)}개 ›</div></button>`;
   v.innerHTML = `
-    <div class="hero"><div class="k">KSC USA · BREA</div><h2>레시피북</h2>
+    <div class="hero"><div class="k">KSC USA</div><h2>레시피북</h2>
       <div class="v">레시피 ${fmtMonth(m.recipeMonth)} · 런치메뉴 ${fmtMonth(m.lunchMonth)}</div></div>
     <div class="sec">메뉴 레시피</div>
     <div class="grid">${tile("menus", true)}${tile("lunch", true)}</div>
