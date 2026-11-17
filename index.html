@@ -279,9 +279,14 @@ async function flushLogs() {
     await fetch(DATA.meta.logUrl, { method: "POST", mode: "no-cors", keepalive: true,
       headers: { "Content-Type": "text/plain;charset=utf-8" }, body: JSON.stringify({ token: DATA.meta.logToken, rows: q }) });
     store.set("ksc_logq", JSON.stringify(JSON.parse(store.get("ksc_logq") || "[]").slice(q.length)));
-  } catch {} finally { flushLogs.busy = false; }
+  } catch {} finally {
+    flushLogs.busy = false;
+    let left = []; try { left = JSON.parse(store.get("ksc_logq") || "[]"); } catch {}
+    if (left.length && navigator.onLine) setTimeout(flushLogs, 1500);  // 보내는 중에 쌓인 기록도 이어서 전송
+  }
 }
 window.addEventListener("online", flushLogs);
+document.addEventListener("visibilitychange", () => { if (document.visibilityState === "hidden") flushLogs(); });
 
 /* ---------- 사진 ---------- */
 async function imgUrl(id) {
