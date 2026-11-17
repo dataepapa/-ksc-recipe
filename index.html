@@ -1,0 +1,492 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#0D2B4E">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="KSC 레시피">
+<meta name="robots" content="noindex,nofollow">
+<title>KSC 레시피</title>
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" href="icon-192.png">
+<link rel="apple-touch-icon" href="icon-192.png">
+<style>
+:root{
+  --navy:#0D2B4E;--navy2:#16406E;--blue:#0077C8;--blueDark:#005A9C;--bluePale:#C3D8EA;--blueSoft:#7FB4DC;
+  --red:#C8102E;--redBg:#FBEAEC;--white:#FFFFFF;--text:#55606B;--muted:#98A3AE;--tint:#F5F8FB;--tint2:#E8F2FA;--border:#DBE3EB;
+  --safe-t:env(safe-area-inset-top,0px);--safe-b:env(safe-area-inset-bottom,0px);
+}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{margin:0;background:var(--tint);color:var(--text);font-family:"Malgun Gothic","맑은 고딕","Apple SD Gothic Neo","Noto Sans KR",sans-serif;font-size:15px;line-height:1.5}
+button{font-family:inherit}
+.hidden{display:none!important}
+/* ---------- 상단바 ---------- */
+.bar{position:sticky;top:0;z-index:20;background:var(--navy);color:#fff;padding:calc(10px + var(--safe-t)) 16px 10px;display:flex;align-items:center;gap:10px;min-height:54px}
+.bar h1{font-size:17px;margin:0;font-weight:700;flex:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.bar .back{background:none;border:0;color:#fff;font-size:22px;padding:2px 8px 2px 0;cursor:pointer;line-height:1}
+.bar .sub{font-size:11px;color:var(--bluePale);font-weight:400}
+main{max-width:980px;margin:0 auto;padding:16px 16px calc(28px + var(--safe-b))}
+/* ---------- 로그인 ---------- */
+#login{min-height:100vh;display:flex;flex-direction:column;justify-content:center;align-items:center;background:var(--navy);padding:24px}
+#login .card{width:100%;max-width:360px;background:#fff;padding:32px 24px 24px;border-top:4px solid var(--blue)}
+#login .brand{font-size:12px;letter-spacing:2px;color:var(--blue);font-weight:700}
+#login h2{margin:6px 0 4px;color:var(--navy);font-size:24px}
+#login p{margin:0 0 20px;font-size:13px}
+#login input{width:100%;padding:13px 12px;border:1px solid var(--border);font-size:16px;font-family:inherit;color:var(--navy)}
+#login input:focus{outline:2px solid var(--blue);border-color:var(--blue)}
+#login button{width:100%;margin-top:12px;padding:13px;background:var(--navy);color:#fff;border:0;font-size:16px;font-weight:700;cursor:pointer}
+#login .err{color:var(--red);font-size:13px;min-height:20px;margin-top:8px}
+/* ---------- 홈 ---------- */
+.hero{background:var(--navy);color:#fff;padding:22px 20px 20px;margin:-16px -16px 18px;border-bottom:3px solid var(--blue)}
+.hero .k{font-size:11px;letter-spacing:2px;color:var(--blueSoft);font-weight:700}
+.hero h2{margin:4px 0 6px;font-size:24px}
+.hero .v{font-size:12px;color:var(--bluePale)}
+.sec{font-size:12px;font-weight:700;color:var(--navy);letter-spacing:1px;margin:20px 0 8px;display:flex;align-items:center;gap:8px}
+.sec::after{content:"";flex:1;height:1px;background:var(--border)}
+.grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
+@media(min-width:640px){.grid{grid-template-columns:repeat(3,minmax(0,1fr))}}
+.tile{background:#fff;border:1px solid var(--border);border-left:4px solid var(--blue);padding:16px 14px;text-align:left;cursor:pointer;min-height:92px;display:flex;flex-direction:column;justify-content:space-between}
+.tile:active{background:var(--tint2)}
+.tile.main{border-left-color:var(--navy);background:var(--navy);color:#fff}
+.tile.main .t{color:#fff}.tile.main .n{color:var(--bluePale)}
+.tile .t{font-size:17px;font-weight:700;color:var(--navy)}
+.tile .e{font-size:11px;color:var(--muted);margin-top:2px}
+.tile .n{font-size:12px;color:var(--blue);font-weight:700;margin-top:10px}
+.foot{margin-top:28px;font-size:11px;color:var(--muted);text-align:center;line-height:1.7}
+.foot button{background:none;border:1px solid var(--border);color:var(--text);padding:6px 12px;margin-top:8px;font-size:12px;cursor:pointer}
+/* ---------- 목록 ---------- */
+.search{width:100%;padding:12px 12px;border:1px solid var(--border);font-size:16px;font-family:inherit;background:#fff;margin-bottom:12px}
+.search:focus{outline:2px solid var(--blue)}
+.list{display:flex;flex-direction:column;gap:8px}
+.item{display:flex;gap:12px;align-items:center;background:#fff;border:1px solid var(--border);padding:10px;cursor:pointer;text-align:left;width:100%}
+.item:active{background:var(--tint2)}
+.thumb{width:64px;height:64px;flex:none;background:var(--tint2);display:flex;align-items:center;justify-content:center;color:var(--blueSoft);font-weight:700;font-size:12px;overflow:hidden}
+.thumb img{width:100%;height:100%;object-fit:cover}
+.item .nm{font-weight:700;color:var(--navy);font-size:15px;line-height:1.35}
+.item .ds{font-size:12px;color:var(--muted);margin-top:3px}
+.item .ar{margin-left:auto;color:var(--blueSoft);font-size:20px;padding-left:4px}
+.empty{padding:30px;text-align:center;color:var(--muted)}
+/* ---------- 슬라이드 (PPT 형식) ---------- */
+.deck-wrap{margin:0 -16px}
+.deck{display:flex;overflow-x:auto;scroll-snap-type:x mandatory;gap:12px;padding:0 16px 6px;scrollbar-width:none}
+.deck::-webkit-scrollbar{display:none}
+.slide{flex:0 0 100%;scroll-snap-align:center;background:#fff;border:1px solid var(--border);box-shadow:0 2px 10px rgba(13,43,78,.08);display:flex;flex-direction:column;min-height:calc(100vh - 190px);position:relative}
+.s-head{padding:16px 18px 10px;border-bottom:2px solid var(--navy);margin:0 14px}
+.s-head .lab{font-size:11px;color:var(--blue);font-weight:700;letter-spacing:1px}
+.s-head h3{margin:3px 0 0;color:var(--navy);font-size:19px;line-height:1.3}
+.s-body{padding:14px 14px 10px;flex:1;display:flex;flex-direction:column;gap:12px}
+.s-foot{display:flex;justify-content:space-between;align-items:center;padding:8px 18px 10px;font-size:11px;color:var(--muted);border-top:1px solid var(--border);margin:0 14px}
+.s-foot b{color:var(--navy)}
+.lead{font-size:13px;color:var(--text);background:var(--tint);border-left:3px solid var(--blue);padding:8px 10px}
+.rtable{width:100%;border-collapse:collapse;font-size:13.5px}
+.rtable th{background:var(--navy);color:#fff;font-weight:700;padding:8px 6px;text-align:center;font-size:12.5px}
+.rtable td{padding:8px 6px;border-bottom:1px solid var(--border);text-align:right;font-variant-numeric:tabular-nums;color:var(--text)}
+.rtable td.l{text-align:left;color:#2a3540}
+.rtable td.c{text-align:center;color:var(--muted)}
+.rtable tr:nth-child(even) td{background:var(--tint)}
+.rtable td.q{font-weight:700;color:var(--navy)}
+.rtable tfoot td{border-top:2px solid var(--navy);font-weight:700;color:var(--navy);background:var(--tint2)!important}
+.kpis{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}
+.kpi{background:var(--tint);padding:10px 12px;border-top:3px solid var(--blue)}
+.kpi.dark{background:var(--navy);border-top-color:var(--blueSoft)}
+.kpi .kl{font-size:11px;color:var(--muted);line-height:1.3}
+.kpi .kv{font-size:20px;font-weight:700;color:var(--navy);margin-top:4px;font-variant-numeric:tabular-nums}
+.kpi.dark .kl{color:var(--bluePale)}.kpi.dark .kv{color:#fff}
+.kpi.alert{border-top-color:var(--red)}.kpi.alert .kv{color:var(--red)}
+.photo{width:100%;background:var(--tint2);display:flex;align-items:center;justify-content:center;overflow:hidden;cursor:zoom-in}
+.photo img{width:100%;height:100%;object-fit:contain;display:block}
+.photo.main{max-height:42vh}
+.photo.step{flex:1;min-height:200px;max-height:52vh}
+.stepno{display:inline-flex;align-items:center;justify-content:center;width:34px;height:34px;background:var(--navy);color:#fff;font-weight:700;font-size:16px;flex:none}
+.steptext{display:flex;gap:12px;align-items:flex-start}
+.steptext .tx{white-space:pre-line;font-size:14.5px;color:#2a3540;line-height:1.6}
+.steptext .tx .en{display:block;color:var(--muted);font-size:13px;margin-top:6px}
+.caution{white-space:pre-line;font-size:14.5px;line-height:1.65;color:#2a3540;background:var(--redBg);border-left:4px solid var(--red);padding:12px 14px}
+.nav{display:flex;align-items:center;gap:10px;margin:12px 0 0}
+.nav button{background:#fff;border:1px solid var(--border);color:var(--navy);font-weight:700;padding:10px 16px;font-size:15px;cursor:pointer}
+.nav button:disabled{opacity:.35}
+.nav .pg{flex:1;text-align:center;font-size:13px;color:var(--navy);font-weight:700}
+.chips{display:flex;gap:6px;overflow-x:auto;padding:0 0 10px;scrollbar-width:none}
+.chips::-webkit-scrollbar{display:none}
+.chip{flex:none;background:#fff;border:1px solid var(--border);color:var(--text);padding:6px 11px;font-size:12px;cursor:pointer;white-space:nowrap}
+.chip.on{background:var(--navy);border-color:var(--navy);color:#fff}
+@media (orientation:landscape) and (max-height:560px){
+  .slide{min-height:calc(100vh - 120px)}
+  .s-body.split{flex-direction:row}
+  .s-body.split>*{flex:1;min-width:0}
+  .photo.step,.photo.main{max-height:none}
+  .bar{min-height:44px;padding-top:calc(6px + var(--safe-t));padding-bottom:6px}
+}
+@media(min-width:900px){.s-body.split{flex-direction:row}.s-body.split>*{flex:1;min-width:0}.slide{min-height:560px}}
+/* ---------- 데이터 표 ---------- */
+.tbl-wrap{overflow-x:auto;background:#fff;border:1px solid var(--border)}
+.dtable{border-collapse:collapse;width:100%;font-size:13px;min-width:100%}
+.dtable th{position:sticky;top:0;background:var(--navy);color:#fff;padding:9px 8px;text-align:center;white-space:nowrap;font-size:12px;cursor:pointer}
+.dtable td{padding:8px;border-bottom:1px solid var(--border);white-space:nowrap;text-align:right;font-variant-numeric:tabular-nums}
+.dtable td.l{text-align:left;white-space:normal;min-width:150px;color:#2a3540}
+.dtable tr:nth-child(even) td{background:var(--tint)}
+.count{font-size:12px;color:var(--muted);margin:-4px 0 8px}
+/* ---------- 확대 ---------- */
+#zoom{position:fixed;inset:0;background:rgba(10,20,35,.96);z-index:50;display:flex;align-items:center;justify-content:center;overflow:auto}
+#zoom img{max-width:100%;max-height:100%;touch-action:pinch-zoom}
+#zoom button{position:fixed;top:calc(12px + var(--safe-t));right:12px;background:#fff;border:0;width:40px;height:40px;font-size:20px;color:var(--navy);cursor:pointer}
+#toast{position:fixed;left:50%;bottom:calc(20px + var(--safe-b));transform:translateX(-50%);background:var(--navy);color:#fff;padding:10px 16px;font-size:13px;z-index:60;border-left:4px solid var(--blue);max-width:90vw}
+#loading{padding:60px 20px;text-align:center;color:var(--muted)}
+</style>
+</head>
+<body>
+
+<section id="login" class="hidden">
+  <div class="card">
+    <div class="brand">KSC USA</div>
+    <h2>레시피북</h2>
+    <p>비밀번호를 입력하세요. 한 번 입력하면 이 기기에 기억됩니다.</p>
+    <form id="loginForm">
+      <input id="pw" type="password" autocomplete="current-password" placeholder="비밀번호">
+      <button type="submit" id="loginBtn">열기</button>
+      <div class="err" id="loginErr"></div>
+    </form>
+  </div>
+</section>
+
+<div id="app" class="hidden">
+  <header class="bar">
+    <button class="back hidden" id="backBtn" aria-label="뒤로">‹</button>
+    <h1 id="title">KSC 레시피</h1>
+  </header>
+  <main id="view"><div id="loading">불러오는 중…</div></main>
+</div>
+
+<div id="zoom" class="hidden"><button aria-label="닫기">✕</button><img alt=""></div>
+<div id="toast" class="hidden"></div>
+
+<script>
+"use strict";
+const LS_KEY = "ksc_recipe_key", LS_SALT = "ksc_recipe_salt";
+let KEY = null, DATA = null, META = null;
+const imgCache = new Map();
+
+/* ---------- 암호 ---------- */
+const b64 = { enc: b => btoa(String.fromCharCode(...new Uint8Array(b))), dec: s => Uint8Array.from(atob(s), c => c.charCodeAt(0)) };
+const hex2buf = h => new Uint8Array(h.match(/../g).map(x => parseInt(x, 16)));
+async function deriveRaw(pw, meta) {
+  const base = await crypto.subtle.importKey("raw", new TextEncoder().encode(pw), "PBKDF2", false, ["deriveBits"]);
+  return crypto.subtle.deriveBits({ name: "PBKDF2", hash: "SHA-256", salt: hex2buf(meta.salt), iterations: meta.iterations }, base, 256);
+}
+const importAes = raw => crypto.subtle.importKey("raw", raw, "AES-GCM", false, ["decrypt"]);
+async function decrypt(buf) {
+  const u = new Uint8Array(buf);
+  return crypto.subtle.decrypt({ name: "AES-GCM", iv: u.slice(0, 12) }, KEY, u.slice(12));
+}
+async function checkKey(key, meta) {
+  try { const u = b64.dec(meta.check); await crypto.subtle.decrypt({ name: "AES-GCM", iv: u.slice(0, 12) }, key, u.slice(12)); return true; }
+  catch { return false; }
+}
+const store = {
+  get(k) { try { return localStorage.getItem(k); } catch { return null; } },
+  set(k, v) { try { localStorage.setItem(k, v); } catch {} },
+  del(k) { try { localStorage.removeItem(k); } catch {} },
+};
+
+/* ---------- 부팅 ---------- */
+async function boot() {
+  if ("serviceWorker" in navigator) navigator.serviceWorker.register("sw.js").catch(() => {});
+  try { META = await (await fetch("meta.json", { cache: "no-store" })).json(); }
+  catch { toast("오프라인 — 저장된 자료로 엽니다"); META = JSON.parse(store.get("ksc_meta") || "null"); }
+  if (!META) { document.body.innerHTML = "<p style='padding:30px'>자료를 불러오지 못했습니다. 인터넷 연결을 확인하세요.</p>"; return; }
+  store.set("ksc_meta", JSON.stringify(META));
+  const saved = store.get(LS_KEY);
+  if (saved && store.get(LS_SALT) === META.salt) {
+    const k = await importAes(b64.dec(saved));
+    if (await checkKey(k, META)) { KEY = k; return start(); }
+  }
+  showLogin();
+}
+function showLogin() {
+  document.getElementById("login").classList.remove("hidden");
+  document.getElementById("app").classList.add("hidden");
+  setTimeout(() => document.getElementById("pw").focus(), 50);
+}
+document.getElementById("loginForm").addEventListener("submit", async e => {
+  e.preventDefault();
+  const btn = document.getElementById("loginBtn"), err = document.getElementById("loginErr");
+  btn.disabled = true; btn.textContent = "확인 중…"; err.textContent = "";
+  try {
+    const raw = await deriveRaw(document.getElementById("pw").value, META);
+    const k = await importAes(raw);
+    if (!(await checkKey(k, META))) { err.textContent = "비밀번호가 맞지 않습니다."; return; }
+    store.set(LS_KEY, b64.enc(raw)); store.set(LS_SALT, META.salt);
+    KEY = k; document.getElementById("login").classList.add("hidden"); start();
+  } catch (x) { err.textContent = "오류: " + x.message; }
+  finally { btn.disabled = false; btn.textContent = "열기"; }
+});
+
+async function start() {
+  document.getElementById("app").classList.remove("hidden");
+  const res = await fetch("data.bin?v=" + META.ver);
+  DATA = JSON.parse(new TextDecoder().decode(await decrypt(await res.arrayBuffer())));
+  const last = store.get("ksc_seen_ver");
+  if (last && last !== META.ver) toast("새 레시피 자료로 업데이트되었습니다 (" + DATA.meta.builtAt + ")");
+  store.set("ksc_seen_ver", META.ver);
+  route();
+}
+
+/* ---------- 사진 ---------- */
+async function imgUrl(id) {
+  if (!id) return null;
+  if (imgCache.has(id)) return imgCache.get(id);
+  const p = (async () => {
+    const r = await fetch("img/" + id + ".bin");
+    if (!r.ok) throw new Error(r.status);
+    const plain = await decrypt(await r.arrayBuffer());
+    return URL.createObjectURL(new Blob([plain], { type: "image/jpeg" }));
+  })();
+  imgCache.set(id, p);
+  return p;
+}
+function hydrateImages(root) {
+  const io = "IntersectionObserver" in window ? new IntersectionObserver(ents => {
+    ents.forEach(en => { if (en.isIntersecting) { io.unobserve(en.target); load(en.target); } });
+  }, { rootMargin: "300px" }) : null;
+  const load = el => imgUrl(el.dataset.img).then(u => {
+    if (!u) return; const im = new Image(); im.src = u; im.alt = ""; el.textContent = ""; el.appendChild(im);
+    if (el.classList.contains("photo")) el.onclick = () => zoom(u);
+  }).catch(() => { el.textContent = "사진 없음"; });
+  root.querySelectorAll("[data-img]").forEach(el => io ? io.observe(el) : load(el));
+}
+function zoom(u) {
+  const z = document.getElementById("zoom"); z.querySelector("img").src = u; z.classList.remove("hidden");
+}
+document.getElementById("zoom").addEventListener("click", e => { if (e.target.tagName !== "IMG") e.currentTarget.classList.add("hidden"); });
+
+/* ---------- 유틸 ---------- */
+const esc = s => String(s ?? "").replace(/[&<>"']/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+const fmt = (v, d = 0) => v == null || isNaN(v) ? "-" : Number(v).toLocaleString("en-US", { minimumFractionDigits: d, maximumFractionDigits: d });
+const usd = (v, d = 2) => v == null ? "-" : "$" + fmt(v, d);
+const pct = (v, d = 1) => v == null ? "-" : fmt(v * 100, d) + "%";
+const qtyFmt = v => v == null ? "-" : (Math.abs(v - Math.round(v)) < 1e-9 ? fmt(v, 0) : fmt(v, v < 10 ? 2 : 1));
+function toast(msg) {
+  const t = document.getElementById("toast"); t.textContent = msg; t.classList.remove("hidden");
+  clearTimeout(toast._t); toast._t = setTimeout(() => t.classList.add("hidden"), 3500);
+}
+function splitKoEn(t) {
+  // "1. 한글...\n1. English..." → 한글/영문 분리 (영문 시작 줄부터 영문)
+  const lines = t.split("\n"); let idx = -1;
+  for (let i = 1; i < lines.length; i++) {
+    const s = lines[i].replace(/^\s*\d+\s*[.)]\s*/, "");
+    if (/^[A-Za-z(]/.test(s) && !/[가-힣]/.test(lines[i])) { idx = i; break; }
+  }
+  if (idx < 0) return { ko: t, en: "" };
+  return { ko: lines.slice(0, idx).join("\n").trim(), en: lines.slice(idx).join("\n").replace(/\n(?!\s*\d+[.)])/g, " ").trim() };
+}
+const chunk = (a, n) => { const o = []; for (let i = 0; i < a.length; i += n) o.push(a.slice(i, i + n)); return o; };
+
+/* ---------- 카테고리 ---------- */
+const CATS = {
+  menus: { title: "메뉴", en: "Menu", kind: "recipes", lab: "MENU" },
+  lunch: { title: "런치메뉴", en: "Lunch Menu", kind: "recipes", lab: "LUNCH MENU" },
+  prepRecipes: { title: "전처리레시피", en: "Prep Recipe", kind: "recipes", lab: "PREP RECIPE" },
+  ingredients: { title: "원재료단가", en: "Ingredient Unit Price", kind: "table" },
+  yield: { title: "수율표", en: "Yield Table", kind: "table" },
+  prepCost: { title: "전처리단가", en: "Unit Prep Cost", kind: "table" },
+};
+const count = k => { const d = DATA[k]; return !d ? 0 : Array.isArray(d) ? d.length : d.rows.length; };
+
+/* ---------- 라우팅 ---------- */
+window.addEventListener("hashchange", route);
+document.getElementById("backBtn").onclick = () => history.length > 1 ? history.back() : (location.hash = "#/");
+function setBar(title, back) {
+  document.getElementById("title").innerHTML = title;
+  document.getElementById("backBtn").classList.toggle("hidden", !back);
+}
+function route() {
+  if (!DATA) return;
+  const p = (location.hash || "#/").slice(2).split("/").map(decodeURIComponent);
+  const v = document.getElementById("view");
+  window.scrollTo(0, 0);
+  if (p[0] === "list" && CATS[p[1]]) return listView(v, p[1]);
+  if (p[0] === "r" && CATS[p[1]]) return recipeView(v, p[1], +p[2], +(p[3] || 0));
+  if (p[0] === "t" && CATS[p[1]]) return tableView(v, p[1]);
+  homeView(v);
+}
+
+/* ---------- 홈 ---------- */
+function homeView(v) {
+  setBar("KSC 레시피", false);
+  const m = DATA.meta;
+  const tile = (k, main) => `<button class="tile${main ? " main" : ""}" onclick="location.hash='#/${CATS[k].kind === "table" ? "t" : "list"}/${k}'">
+      <div><div class="t">${CATS[k].title}</div><div class="e">${CATS[k].en}</div></div><div class="n">${count(k)}개 ›</div></button>`;
+  v.innerHTML = `
+    <div class="hero"><div class="k">KSC USA · BREA</div><h2>레시피북</h2>
+      <div class="v">레시피 ${fmtMonth(m.recipeMonth)} · 런치메뉴 ${fmtMonth(m.lunchMonth)}</div></div>
+    <div class="sec">메뉴 레시피</div>
+    <div class="grid">${tile("menus", true)}${tile("lunch", true)}</div>
+    <div class="sec">원가 · 전처리</div>
+    <div class="grid">${tile("ingredients")}${tile("yield")}${tile("prepCost")}${tile("prepRecipes")}</div>
+    <div class="foot">원본: ${m.sources.map(esc).join("<br>")}<br>업데이트 ${esc(m.builtAt)}<br>
+      <button id="logout">이 기기에서 로그아웃</button></div>`;
+  document.getElementById("logout").onclick = () => { store.del(LS_KEY); location.reload(); };
+}
+const fmtMonth = s => s ? `${s.slice(0, 4)}.${s.slice(4)}` : "-";
+
+/* ---------- 목록 ---------- */
+function recName(r) { return r.title || r.name; }
+function listView(v, k) {
+  const c = CATS[k];
+  setBar(`${c.title} <span class="sub">${count(k)}</span>`, true);
+  const items = DATA[k];
+  v.innerHTML = `<input class="search" type="search" placeholder="${c.title} 검색 (한글/영문)" id="q">
+    <div class="list" id="lst"></div>`;
+  const lst = document.getElementById("lst"), q = document.getElementById("q");
+  const draw = () => {
+    const s = q.value.trim().toLowerCase();
+    const rows = items.map((r, i) => [r, i]).filter(([r]) => !s || (recName(r) + " " + r.name + " " + r.ingredients.map(x => x.name).join(" ")).toLowerCase().includes(s));
+    lst.innerHTML = rows.length ? rows.map(([r, i]) => {
+      const price = metric(r, /판매가격|selling price/i);
+      const desc = [`재료 ${r.ingredients.length}`, r.steps.length ? `조리 ${r.steps.length}단계` : "", price != null ? usd(price, 0) : ""].filter(Boolean).join(" · ");
+      return `<button class="item" onclick="location.hash='#/r/${k}/${i}'">
+        <div class="thumb" ${r.photo ? `data-img="${r.photo}"` : ""}>${r.photo ? "" : "KSC"}</div>
+        <div><div class="nm">${esc(recName(r))}</div><div class="ds">${desc}</div></div><div class="ar">›</div></button>`;
+    }).join("") : `<div class="empty">검색 결과가 없습니다</div>`;
+    hydrateImages(lst);
+  };
+  q.oninput = draw; draw();
+}
+
+/* ---------- 레시피 = 슬라이드 ---------- */
+function metric(r, rx, notRx) {
+  const m = r.metrics.find(x => rx.test(x.label) && !(notRx && notRx.test(x.label)));
+  return m && typeof m.value === "number" ? m.value : null;
+}
+function buildSlides(r, k) {
+  const S = [], name = esc(recName(r)), lab = CATS[k].lab;
+  const ings = r.ingredients;
+  // 1) 레시피 표 (첫 장)
+  const pages = chunk(ings, 12);
+  pages.forEach((rows, pi) => {
+    const start = pi * 12;
+    S.push({ lab: `${lab} · 레시피`, title: name + (pages.length > 1 ? ` (${pi + 1}/${pages.length})` : ""), body: `
+      <table class="rtable"><thead><tr><th style="width:34px">No</th><th>재료</th><th style="width:82px">분량</th><th style="width:44px">단위</th></tr></thead>
+      <tbody>${rows.map((x, j) => `<tr><td class="c">${start + j + 1}</td><td class="l">${esc(x.name)}</td><td class="q">${qtyFmt(x.qty)}</td><td class="c">${esc(x.unit)}</td></tr>`).join("")}</tbody>
+      ${pi === pages.length - 1 && r.total.qty != null ? `<tfoot><tr><td></td><td class="l">합계</td><td>${qtyFmt(r.total.qty)}</td><td class="c">g</td></tr></tfoot>` : ""}</table>` });
+  });
+  // 2) 원가 요약 + 대표 사진
+  const price = metric(r, /판매가격|selling price/i);
+  const sup = metric(r, /공급원가|purchase cost|supply cost/i, /율|ratio|rate/i);
+  const supR = metric(r, /공급원가율|purchase cost ratio|supply cost ratio/i);
+  const selR = metric(r, /판매\s*원가율|selling cost ratio/i);
+  const tgtR = metric(r, /가용\s*원가율|target cost ratio|target food cost|utilization/i);
+  const serv = metric(r, /serving/i);
+  const kp = [];
+  if (price != null) kp.push(`<div class="kpi dark"><div class="kl">판매가격 Selling Price</div><div class="kv">${usd(price)}</div></div>`);
+  kp.push(`<div class="kpi"><div class="kl">공급원가 Purchase Cost</div><div class="kv">${usd(sup ?? r.total.cost)}</div></div>`);
+  if (supR != null) kp.push(`<div class="kpi${tgtR != null && supR > tgtR ? " alert" : ""}"><div class="kl">공급원가율${tgtR != null ? ` (목표 ${pct(tgtR, 0)})` : ""}</div><div class="kv">${pct(supR)}</div></div>`);
+  if (selR != null) kp.push(`<div class="kpi"><div class="kl">판매원가율 Selling Cost Ratio</div><div class="kv">${pct(selR)}</div></div>`);
+  if (serv != null) kp.push(`<div class="kpi"><div class="kl">Serving 중량</div><div class="kv">${fmt(serv)} g</div></div>`);
+  if (r.total.gross != null) kp.push(`<div class="kpi"><div class="kl">사용 총중량 (Gross)</div><div class="kv">${fmt(r.total.gross)} g</div></div>`);
+  S.push({ lab: `${lab} · 원가 요약`, title: name, split: !!r.photo, body: `
+     ${r.photo ? `<div class="photo main" data-img="${r.photo}"></div>` : ""}
+     <div><div class="kpis">${kp.join("")}</div>
+     ${supR != null && tgtR != null ? `<div class="lead" style="margin-top:10px">공급원가율 ${pct(supR)} — 목표 ${pct(tgtR, 0)} 대비 ${supR > tgtR ? `<b style="color:var(--red)">${fmt((supR - tgtR) * 100, 1)}%p 초과</b>` : `${fmt((tgtR - supR) * 100, 1)}%p 여유`}</div>` : ""}</div>` });
+  // 3) 원가 상세
+  const cpages = chunk(ings, 12);
+  cpages.forEach((rows, pi) => {
+    S.push({ lab: `${lab} · 원가 상세`, title: name + (cpages.length > 1 ? ` (${pi + 1}/${cpages.length})` : ""), body: `
+      <table class="rtable"><thead><tr><th>재료</th><th style="width:52px">수율</th><th style="width:66px">총중량g</th><th style="width:64px">원가</th><th style="width:52px">비중</th></tr></thead>
+      <tbody>${rows.map(x => `<tr><td class="l">${esc(x.name)}</td><td>${x.yield != null ? pct(x.yield, 0) : "-"}</td><td>${qtyFmt(x.gross)}</td><td class="q">${usd(x.cost)}</td><td>${pct(x.ratio)}</td></tr>`).join("")}</tbody>
+      ${pi === cpages.length - 1 ? `<tfoot><tr><td class="l">합계</td><td></td><td>${qtyFmt(r.total.gross)}</td><td>${usd(r.total.cost)}</td><td>100%</td></tr></tfoot>` : ""}</table>` });
+  });
+  // 4) 주의사항
+  if (r.caution) {
+    const { ko, en } = splitKoEn(r.caution);
+    S.push({ lab: `${lab} · 주의사항`, title: name, body: `<div class="caution">${esc(ko)}</div>${en ? `<div class="lead" style="white-space:pre-line">${esc(en)}</div>` : ""}` });
+  }
+  // 5) 조리 순서 — 한 장에 한 단계
+  r.steps.forEach((s, i) => {
+    const { ko, en } = splitKoEn(s.text);
+    const m = ko.match(/^\s*(\d+)\s*[.)]\s*/);
+    const no = m ? m[1] : i + 1;
+    S.push({ lab: `${lab} · 조리 순서 ${i + 1}/${r.steps.length}`, title: name, split: !!s.img, body: `
+      ${s.img ? `<div class="photo step" data-img="${s.img}"></div>` : ""}
+      <div class="steptext"><span class="stepno">${no}</span><div class="tx">${esc(ko.replace(/^\s*\d+\s*[.)]\s*/, ""))}${en ? `<span class="en">${esc(en)}</span>` : ""}</div></div>` });
+  });
+  return S;
+}
+function recipeView(v, k, idx, start) {
+  const r = DATA[k][idx];
+  if (!r) { location.hash = "#/list/" + k; return; }
+  setBar(esc(recName(r)), true);
+  const S = buildSlides(r, k);
+  const jumps = [["레시피", 0]];
+  const ci = S.findIndex(s => /원가 요약/.test(s.lab)); if (ci >= 0) jumps.push(["원가", ci]);
+  const ui = S.findIndex(s => /주의사항/.test(s.lab)); if (ui >= 0) jumps.push(["주의사항", ui]);
+  const si = S.findIndex(s => /조리 순서/.test(s.lab)); if (si >= 0) jumps.push(["조리 순서", si]);
+  v.innerHTML = `
+    <div class="chips">${jumps.map(([t, i]) => `<button class="chip" data-go="${i}">${t}</button>`).join("")}</div>
+    <div class="deck-wrap"><div class="deck" id="deck">${S.map((s, i) => `
+      <article class="slide">
+        <div class="s-head"><div class="lab">${s.lab}</div><h3>${s.title}</h3></div>
+        <div class="s-body${s.split ? " split" : ""}">${s.body}</div>
+        <div class="s-foot"><span>KSC USA · ${CATS[k].title}</span><b>${i + 1} / ${S.length}</b></div>
+      </article>`).join("")}</div></div>
+    <div class="nav"><button id="prv">‹ 이전</button><div class="pg" id="pg"></div><button id="nxt">다음 ›</button></div>
+    <div class="nav" style="margin-top:8px">
+      <button id="prevRec" ${idx <= 0 ? "disabled" : ""}>‹ 이전 메뉴</button><div class="pg"></div>
+      <button id="nextRec" ${idx >= DATA[k].length - 1 ? "disabled" : ""}>다음 메뉴 ›</button></div>`;
+  const deck = document.getElementById("deck"), pg = document.getElementById("pg");
+  const cur = () => Math.round(deck.scrollLeft / (deck.firstElementChild.offsetWidth + 12));
+  const go = i => deck.scrollTo({ left: Math.max(0, Math.min(S.length - 1, i)) * (deck.firstElementChild.offsetWidth + 12), behavior: "smooth" });
+  const upd = () => {
+    const c = cur(); pg.textContent = `${c + 1} / ${S.length}`;
+    document.getElementById("prv").disabled = c <= 0; document.getElementById("nxt").disabled = c >= S.length - 1;
+    let on = 0; jumps.forEach(([, i], j) => { if (c >= i) on = j; });
+    v.querySelectorAll(".chip").forEach((ch, j) => ch.classList.toggle("on", j === on));
+  };
+  deck.addEventListener("scroll", () => { clearTimeout(upd._t); upd._t = setTimeout(upd, 60); });
+  document.getElementById("prv").onclick = () => go(cur() - 1);
+  document.getElementById("nxt").onclick = () => go(cur() + 1);
+  document.getElementById("prevRec").onclick = () => location.replace(`#/r/${k}/${idx - 1}`);
+  document.getElementById("nextRec").onclick = () => location.replace(`#/r/${k}/${idx + 1}`);
+  v.querySelectorAll(".chip").forEach(ch => ch.onclick = () => go(+ch.dataset.go));
+  document.onkeydown = e => { if (e.key === "ArrowRight") go(cur() + 1); if (e.key === "ArrowLeft") go(cur() - 1); };
+  hydrateImages(deck);
+  requestAnimationFrame(() => { if (start) deck.scrollLeft = start * (deck.firstElementChild.offsetWidth + 12); upd(); });
+}
+
+/* ---------- 표 ---------- */
+const COLFMT = {
+  ingredients: [null, null, null, v => usd(v, 2), null, v => qtyFmt(v), v => usd(v, 5), v => qtyFmt(v)],
+  yield: [null, v => typeof v === "number" ? pct(v, 0) : esc(v)],
+  prepCost: [null, v => qtyFmt(v), v => usd(v, 2), v => usd(v, 5)],
+};
+const TEXTCOL = { ingredients: [1], yield: [0], prepCost: [0] };
+function tableView(v, k) {
+  const c = CATS[k], t = DATA[k];
+  setBar(`${c.title} <span class="sub">${t.rows.length}</span>`, true);
+  let sortCol = -1, asc = true;
+  v.innerHTML = `<input class="search" type="search" placeholder="${c.title} 검색 (품명·코드)" id="q"><div class="count" id="cnt"></div>
+    <div class="tbl-wrap"><table class="dtable"><thead><tr>${t.columns.map((h, i) => `<th data-i="${i}">${esc(h)}</th>`).join("")}</tr></thead><tbody id="tb"></tbody></table></div>`;
+  const tb = document.getElementById("tb"), q = document.getElementById("q");
+  const fm = COLFMT[k] || [], tc = TEXTCOL[k] || [];
+  const draw = () => {
+    const s = q.value.trim().toLowerCase();
+    let rows = t.rows.filter(r => !s || r.join(" ").toLowerCase().includes(s));
+    if (sortCol >= 0) rows = rows.slice().sort((a, b) => {
+      const x = a[sortCol], y = b[sortCol];
+      const r = typeof x === "number" && typeof y === "number" ? x - y : String(x ?? "").localeCompare(String(y ?? ""), "ko");
+      return asc ? r : -r;
+    });
+    document.getElementById("cnt").textContent = `${rows.length}개 항목 · 머리글을 누르면 정렬`;
+    tb.innerHTML = rows.map(r => `<tr>${r.map((x, i) => `<td class="${tc.includes(i) ? "l" : ""}">${fm[i] && x != null && x !== "" ? fm[i](x) : esc(x ?? "")}</td>`).join("")}</tr>`).join("")
+      || `<tr><td colspan="${t.columns.length}" class="l" style="text-align:center;padding:24px">검색 결과가 없습니다</td></tr>`;
+  };
+  v.querySelectorAll("th").forEach(th => th.onclick = () => { const i = +th.dataset.i; asc = sortCol === i ? !asc : true; sortCol = i; draw(); });
+  q.oninput = draw; draw();
+}
+
+boot();
+</script>
+</body>
+</html>
