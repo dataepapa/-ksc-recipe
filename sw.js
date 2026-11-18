@@ -1,4 +1,4 @@
-// KSC 레시피 서비스워커 — 빌드 20261118-091459
+// KSC 레시피 서비스워커 — 빌드 20261118-170036
 // 앱·자료(index/meta/data)는 네트워크 우선(최신 반영), 사진(img/*.bin, 내용해시 파일명)은 캐시 우선. 오프라인이면 캐시로.
 const CACHE = "ksc-recipe-v1";
 self.addEventListener("install", e => { self.skipWaiting(); });
