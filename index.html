@@ -158,6 +158,8 @@ main{max-width:980px;margin:0 auto;padding:16px 16px calc(28px + var(--safe-b))}
 .dtable tr.grp td.n{text-align:right}
 .dtable tfoot td{border-top:2px solid var(--navy);font-weight:700;color:var(--navy);background:var(--tint2)}
 .dtable td.warn{color:var(--red);font-weight:700}
+.dtable.cmp tr.grp td{background:var(--navy2)!important;color:#fff;border-bottom-color:var(--navy)}
+.dtable .cr{color:#E8710A;font-size:10.5px;font-weight:700;margin-left:3px}
 .dtable td.mut,.dtable .mut{color:var(--muted)}
 .dtable th.l{text-align:left}
 .note{font-size:12px;color:var(--muted);margin:8px 0;line-height:1.6}
@@ -543,8 +545,9 @@ function erpCmpView(v, kind, mon) {
   const sum = (list, st, f) => list.reduce((a, r) => a + (r.v[st] ? r.v[st][f] : 0), 0);
   const all = [...rows.values()];
   const cells = (list, bold) => ["q", "sl", "c"].map(f => sts.map(st => {
-    const x = sum(list, st, f);
-    return `<td${bold ? ' class="n"' : ""}>${x ? (f === "q" ? qtyFmt(x) : usd(x, 0)) : "-"}</td>`;
+    const x = sum(list, st, f), sl = sum(list, st, "sl");
+    const cr = f === "c" && !bold && x && sl ? `<span class="cr">(${pct(x / sl)})</span>` : "";   // 메뉴별 원가율 = 이론원가 ÷ 메뉴 매출
+    return `<td${bold ? ' class="n"' : ""}>${x ? (f === "q" ? qtyFmt(x) : usd(x, 0)) : "-"}${cr}</td>`;
   }).join("")).join("");
   const gl = [...groups.entries()].map(([g, list]) => ({ g, list, c: sts.reduce((a, st) => a + sum(list, st, "c"), 0) }))
     .sort((a, b) => b.c - a.c);
@@ -555,12 +558,12 @@ function erpCmpView(v, kind, mon) {
   v.innerHTML = `${head}
     <div class="kpis3">${sts.map((st, i) => `<div class="kpi${i ? "" : " dark"}"><div class="kl">${st} · Net Sales</div><div class="kv">${usd(D[st].net, 0)}</div>
       <div class="ks">이론원가 Theo. cost ${usd(D[st].theo, 0)} · ${pct(ratio(D[st].theo, D[st].net))}</div></div>`).join("")}</div>
-    <div class="note">${monLabel(mon)} 누계 · Menu Group별 (이론원가 큰 순) · 같은 POS 메뉴 이름끼리 나란히 비교<span class="en2">${monEn(mon)} month-to-date · by Menu Group (highest theoretical cost first) · same POS item names side by side</span></div>
-    <div class="tbl-wrap"><table class="dtable"><thead>
+    <div class="note">${monLabel(mon)} 누계 · Menu Group별 (이론원가 큰 순) · 같은 POS 메뉴 이름끼리 나란히 비교 · <b style="color:#E8710A">(%)</b> = 메뉴 원가율 (이론원가 ÷ 메뉴 매출)<span class="en2">${monEn(mon)} month-to-date · by Menu Group (highest theoretical cost first) · same POS item names side by side · <b style="color:#E8710A">(%)</b> = menu cost % (theoretical cost ÷ menu sales)</span></div>
+    <div class="tbl-wrap"><table class="dtable cmp"><thead>
       <tr><th class="l" rowspan="2">메뉴 (Menu Group)</th><th colspan="${sts.length}">수량<span class="en2">Qty</span></th><th colspan="${sts.length}">매출<span class="en2">Sales</span></th><th colspan="${sts.length}">이론원가<span class="en2">Theo. Cost</span></th></tr>
       <tr>${sub}${sub}${sub}</tr></thead>
       <tbody>${body || `<tr><td colspan="${1 + sts.length * 3}" class="l" style="text-align:center;padding:24px">판매 기록 없음 · No sales</td></tr>`}</tbody>
-      <tfoot><tr><td class="l">합계 Total</td>${cells(all)}</tr>
+      <tfoot><tr><td class="l">합계 Total</td>${cells(all, true)}</tr>
         <tr><td class="l">이론원가 ÷ Net Sales</td><td colspan="${sts.length * 2}"></td>${sts.map(st => `<td>${pct(ratio(D[st].theo, D[st].net))}</td>`).join("")}</tr></tfoot></table></div>`;
 }
 // 기간 P-Mix 집계: itemIdx → [qty, sales]
