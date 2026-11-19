@@ -399,6 +399,7 @@ function route() {
   if (p[0] === "t" && CATS[p[1]]) { logEvent("표", CATS[p[1]].title); return tableView(v, p[1]); }
   if (p[0] === "recipe") return recipeHome(v);
   if (p[0] === "erp") {
+    if (p[1] === "cmp" && ERP()) { logEvent("ERP", (p[2] === "cost" ? "원가 비교" : "Pmix 비교") + (p[3] ? " " + p[3] : "")); return erpCmpView(v, p[2], p[3]); }
     if (p[1] && ERP()?.stores?.[p[1]]) { logEvent("ERP", p[1] + (p[2] ? " " + p[2] : "")); return erpStoreView(v, p[1], p[2], p[3], p[4]); }
     return erpHome(v);
   }
@@ -459,9 +460,93 @@ function erpHome(v) {
         <div class="e">KSC ${st} · ${monLabel(mon)} (~${s.lastDate.slice(5)})</div></div>
         <div class="n">Net ${usd(net, 0)} · 이론원가율 ${pct(ratio(theo, net))} ›</div></button>`;
     }).join("")}</div>
+    <div class="sec">매장 비교</div>
+    <div class="big">
+      <button class="bigbtn alt" onclick="location.hash='#/erp/cmp/pmix'"><div><div class="t">Pmix 비교</div>
+        <div class="e">Irvine · Brea 메뉴별 판매수량·매출·이론원가</div></div><div class="n">메뉴 비교 ›</div></button>
+      <button class="bigbtn alt" onclick="location.hash='#/erp/cmp/cost'"><div><div class="t">원가 비교</div>
+        <div class="e">기초재고 · 입고 · 기말재고 · 재고반영 원가율</div></div><div class="n">원가 비교 ›</div></button>
+    </div>
     <div class="note">· Net Sales·P-Mix = 글로벌 매출 대시보드 (POS) 자동 수신<br>
       · 이론원가 = P-Mix(Food) 판매수량 × 메뉴 단위원가 — 단위원가·POS↔레시피 연결은 ERP 스프레드시트 '5-2 POS매핑' 기준<br>
       · 이론원가율 = 이론원가 ÷ Net Sales<br>· 입고·재고 = 드라이브 매장별 Cost Calculation 시트 (매일 자동 수신) → 실제 푸드원가율</div>`;
+}
+// 매장 비교 (Pmix 비교 / 원가 비교)
+function erpCmpView(v, kind, mon) {
+  const e = ERP(), sts = Object.keys(e.stores);
+  kind = kind === "cost" ? "cost" : "pmix";
+  const mons = [...new Set(sts.flatMap(st => e.stores[st].months))].sort();
+  mon = mons.includes(mon) ? mon : mons[mons.length - 1];
+  setBar(`${kind === "cost" ? "원가 비교" : "Pmix 비교"} <span class="sub">${monLabel(mon)}</span>`, true);
+  const D = {};
+  sts.forEach(st => {
+    const s = e.stores[st], ds = s.days.filter(x => x.d.startsWith(mon));
+    D[st] = { s, ds, net: ds.reduce((a, x) => a + (x.net || 0), 0), theo: ds.reduce((a, x) => a + x.theo, 0),
+      food: ds.reduce((a, x) => a + x.food, 0), last: ds.length ? ds[ds.length - 1].d.slice(5) : "-" };
+  });
+  const head = `<div class="storehead">${[["pmix", "Pmix 비교"], ["cost", "원가 비교"]].map(([k, t]) => `<button class="chip${k === kind ? " on" : ""}" onclick="location.replace('#/erp/cmp/${k}/${mon}')">${t}</button>`).join("")}</div>
+    <div class="chips">${mons.slice().reverse().map(m => `<button class="chip${m === mon ? " on" : ""}" onclick="location.replace('#/erp/cmp/${kind}/${m}')">${monLabel(m)}</button>`).join("")}</div>`;
+  const th = `<th class="l">항목</th>${sts.map(st => `<th>${st}</th>`).join("")}`;
+  if (kind === "cost") {
+    const val = st => {
+      const a = (D[st].s.actual || {})[mon] || null, net = D[st].net;
+      const use = a && a.open != null && a.close != null ? a.open + a.rcv - a.close : null;
+      return { a, net, use, ar: ratio(use, net), tr: ratio(D[st].theo, net) };
+    };
+    const V = Object.fromEntries(sts.map(st => [st, val(st)]));
+    const money = x => x == null ? `<span class="warn">미입력</span>` : usd(x, 0);
+    const row = (lab, f, cls) => `<tr${cls ? ` class="${cls}"` : ""}><td class="l">${lab}</td>${sts.map(st => `<td>${f(V[st], st)}</td>`).join("")}</tr>`;
+    v.innerHTML = `${head}
+      <div class="tbl-wrap"><table class="dtable"><thead><tr>${th}</tr></thead><tbody>
+        ${row("기초재고금액", x => x.a ? money(x.a.open) : "-")}
+        ${row("입고금액", x => x.a ? usd(x.a.rcv, 0) : "-")}
+        ${row("기말재고금액", x => x.a ? money(x.a.close) : "-")}
+        ${row("사용금액 (기초+입고−기말)", x => x.use == null ? "-" : usd(x.use, 0))}
+        ${row("Net Sales", x => usd(x.net, 0))}
+        ${row("재고반영 원가율 (Net Sales 기준)", x => x.ar == null ? "-" : `<b>${pct(x.ar)}</b>`, "grp")}
+        ${row("이론원가율 (참고)", x => pct(x.tr))}
+        ${row("차이 (재고반영 − 이론)", x => x.ar == null || x.tr == null ? "-" : `<b style="color:${x.ar - x.tr > 0.02 ? "var(--red)" : "inherit"}">${x.ar - x.tr >= 0 ? "+" : ""}${fmt((x.ar - x.tr) * 100, 1)}%p</b>`)}
+      </tbody></table></div>
+      <div class="note">${monLabel(mon)} · 매출 기준일 ${sts.map(st => `${st} ~${D[st].last}`).join(" · ")}<br>
+        재고반영 원가율 = (기초재고 + 입고 − 기말재고) ÷ Net Sales. 재고·입고 = 드라이브 매장별 Cost Calculation, Net Sales = 매출 대시보드.
+        기말재고가 '미입력'이면 드라이브 시트에 월말 재고가 아직 없는 것입니다.</div>`;
+    return;
+  }
+  // Pmix 비교: 메뉴 이름으로 두 매장 합침
+  const rows = new Map();
+  sts.forEach(st => {
+    const s = D[st].s;
+    erpAgg(s, D[st].ds.map(x => x.d)).forEach(([q, sl], i) => {
+      const it = s.items[i], k = it[1];
+      if (!rows.has(k)) rows.set(k, { name: k, g: it[0], v: {} });
+      const r = rows.get(k);
+      r.v[st] = { q, sl, c: it[2] != null ? q * it[2] : 0 };
+    });
+  });
+  const groups = new Map();
+  rows.forEach(r => { if (!groups.has(r.g)) groups.set(r.g, []); groups.get(r.g).push(r); });
+  const sum = (list, st, f) => list.reduce((a, r) => a + (r.v[st] ? r.v[st][f] : 0), 0);
+  const all = [...rows.values()];
+  const cells = (list, bold) => ["q", "sl", "c"].map(f => sts.map(st => {
+    const x = sum(list, st, f);
+    return `<td${bold ? ' class="n"' : ""}>${x ? (f === "q" ? qtyFmt(x) : usd(x, 0)) : "-"}</td>`;
+  }).join("")).join("");
+  const gl = [...groups.entries()].map(([g, list]) => ({ g, list, c: sts.reduce((a, st) => a + sum(list, st, "c"), 0) }))
+    .sort((a, b) => b.c - a.c);
+  const body = gl.map(({ g, list }) => `<tr class="grp"><td>${esc(g)}</td>${cells(list, true)}</tr>` +
+    list.sort((a, b) => sts.reduce((t, st) => t + (b.v[st]?.q || 0) - (a.v[st]?.q || 0), 0))
+      .map(r => `<tr><td class="l">${esc(r.name)}</td>${cells([r])}</tr>`).join("")).join("");
+  const sub = sts.map(st => `<th>${st}</th>`).join("");
+  v.innerHTML = `${head}
+    <div class="kpis3">${sts.map((st, i) => `<div class="kpi${i ? "" : " dark"}"><div class="kl">${st} · Net Sales</div><div class="kv">${usd(D[st].net, 0)}</div>
+      <div class="ks">이론원가 ${usd(D[st].theo, 0)} · ${pct(ratio(D[st].theo, D[st].net))}</div></div>`).join("")}</div>
+    <div class="note">${monLabel(mon)} 누계 · Menu Group별 (이론원가 큰 순) · 같은 POS 메뉴 이름끼리 나란히 비교</div>
+    <div class="tbl-wrap"><table class="dtable"><thead>
+      <tr><th class="l" rowspan="2">메뉴 (Menu Group)</th><th colspan="${sts.length}">수량</th><th colspan="${sts.length}">매출</th><th colspan="${sts.length}">이론원가</th></tr>
+      <tr>${sub}${sub}${sub}</tr></thead>
+      <tbody>${body || `<tr><td colspan="${1 + sts.length * 3}" class="l" style="text-align:center;padding:24px">판매 기록 없음</td></tr>`}</tbody>
+      <tfoot><tr><td class="l">합계</td>${cells(all)}</tr>
+        <tr><td class="l">이론원가 ÷ Net Sales</td><td colspan="${sts.length * 2}"></td>${sts.map(st => `<td>${pct(ratio(D[st].theo, D[st].net))}</td>`).join("")}</tr></tfoot></table></div>`;
 }
 // 기간 P-Mix 집계: itemIdx → [qty, sales]
 function erpAgg(s, dates) {
