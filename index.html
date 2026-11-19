@@ -163,6 +163,12 @@ main{max-width:980px;margin:0 auto;padding:16px 16px calc(28px + var(--safe-b))}
 .note{font-size:12px;color:var(--muted);margin:8px 0;line-height:1.6}
 .storehead{display:flex;gap:8px;margin-bottom:10px}
 .storehead .chip{font-size:14px;padding:8px 16px;font-weight:700}
+/* ---------- 영문 병기 (한국어 아래) ---------- */
+.en2{display:block;font-size:.8em;opacity:.75;font-weight:400;letter-spacing:0;line-height:1.25;white-space:normal}
+.bigbtn .t .en2{font-size:14px;letter-spacing:.5px;margin-top:2px}
+.hero h2 .en2{font-size:13px;margin-top:2px}
+.note .en2,.foot .en2,.lead .en2{font-size:11px;margin-top:4px}
+.bar .sub .en{opacity:.85}
 </style>
 </head>
 <body>
@@ -171,11 +177,11 @@ main{max-width:980px;margin:0 auto;padding:16px 16px calc(28px + var(--safe-b))}
   <div class="card">
     <div class="brand">KSC USA</div>
     <h2>KSC ERP</h2>
-    <p>이름과 개인 비밀번호를 입력하세요. 한 번 입력하면 이 기기에 기억됩니다.<br><span style="color:var(--muted);font-size:12px">※ 열람 기록(이름·시간·기기)이 남습니다.</span></p>
+    <p>이름과 개인 비밀번호를 입력하세요. 한 번 입력하면 이 기기에 기억됩니다.<span class="en2">Enter your name and personal password. It will be remembered on this device.</span><span style="display:block;margin-top:6px;color:var(--muted);font-size:12px">※ 열람 기록(이름·시간·기기)이 남습니다.<span class="en2">Access is logged (name, time, device).</span></span></p>
     <form id="loginForm">
-      <input id="nm" type="text" autocomplete="username" placeholder="이름 (예: 홍길동)" style="margin-bottom:8px">
-      <input id="pw" type="password" autocomplete="current-password" placeholder="비밀번호">
-      <button type="submit" id="loginBtn">열기</button>
+      <input id="nm" type="text" autocomplete="username" placeholder="이름 Name (예: 홍길동)" style="margin-bottom:8px">
+      <input id="pw" type="password" autocomplete="current-password" placeholder="비밀번호 Password">
+      <button type="submit" id="loginBtn">열기 Open</button>
       <div class="err" id="loginErr"></div>
     </form>
   </div>
@@ -186,7 +192,7 @@ main{max-width:980px;margin:0 auto;padding:16px 16px calc(28px + var(--safe-b))}
     <button class="back hidden" id="backBtn" aria-label="뒤로">‹</button>
     <h1 id="title">KSC ERP</h1>
   </header>
-  <main id="view"><div id="loading">불러오는 중…</div></main>
+  <main id="view"><div id="loading">불러오는 중…<span class="en2">Loading…</span></div></main>
 </div>
 
 <div id="zoom" class="hidden"><button aria-label="닫기">✕</button><img alt=""></div>
@@ -232,8 +238,8 @@ const store = {
 async function boot() {
   if ("serviceWorker" in navigator) navigator.serviceWorker.register("sw.js").catch(() => {});
   try { META = await (await fetch("meta.json", { cache: "no-store" })).json(); }
-  catch { toast("오프라인 — 저장된 자료로 엽니다"); META = JSON.parse(store.get("ksc_meta") || "null"); }
-  if (!META) { document.body.innerHTML = "<p style='padding:30px'>자료를 불러오지 못했습니다. 인터넷 연결을 확인하세요.</p>"; return; }
+  catch { toast("오프라인 — 저장된 자료로 엽니다 / Offline — opening saved data"); META = JSON.parse(store.get("ksc_meta") || "null"); }
+  if (!META) { document.body.innerHTML = "<p style='padding:30px'>자료를 불러오지 못했습니다. 인터넷 연결을 확인하세요.<br>Could not load data. Check your internet connection.</p>"; return; }
   store.set("ksc_meta", JSON.stringify(META));
   store.del("ksc_recipe_key"); store.del("ksc_recipe_salt");  // 예전 공용 비밀번호 방식 흔적 정리
   const kek = store.get(LS_KEK), nm = store.get(LS_NAME);
@@ -241,7 +247,7 @@ async function boot() {
     const r = await unwrapFor(nm, b64.dec(kek));
     if (r) { KEY = r.key; USER = r.name; return start("앱 열기"); }
     store.del(LS_KEK);
-    document.getElementById("loginErr").textContent = "접속 권한이 바뀌었습니다. 다시 로그인하세요.";
+    document.getElementById("loginErr").textContent = "접속 권한이 바뀌었습니다. 다시 로그인하세요. / Access changed. Please log in again.";
   }
   if (nm) document.getElementById("nm").value = nm;
   showLogin();
@@ -254,19 +260,19 @@ function showLogin() {
 document.getElementById("loginForm").addEventListener("submit", async e => {
   e.preventDefault();
   const btn = document.getElementById("loginBtn"), err = document.getElementById("loginErr");
-  btn.disabled = true; btn.textContent = "확인 중…"; err.textContent = "";
+  btn.disabled = true; btn.textContent = "확인 중… Checking…"; err.textContent = "";
   try {
     const name = document.getElementById("nm").value.trim();
-    if (!name) { err.textContent = "이름을 입력하세요."; return; }
+    if (!name) { err.textContent = "이름을 입력하세요. / Enter your name."; return; }
     const ent = META.users && META.users[await nameId(name)];
-    if (!ent) { err.textContent = "등록되지 않은 이름입니다. 관리자에게 문의하세요."; return; }
+    if (!ent) { err.textContent = "등록되지 않은 이름입니다. 관리자에게 문의하세요. / Name not registered. Contact the admin."; return; }
     const raw = await deriveRaw(document.getElementById("pw").value, ent.salt, META.iterations);
     const r = await unwrapFor(name, raw);
-    if (!r) { err.textContent = "비밀번호가 맞지 않습니다."; return; }
+    if (!r) { err.textContent = "비밀번호가 맞지 않습니다. / Incorrect password."; return; }
     store.set(LS_KEK, b64.enc(raw)); store.set(LS_NAME, name);
     KEY = r.key; USER = r.name; document.getElementById("login").classList.add("hidden"); start("로그인");
-  } catch (x) { err.textContent = "오류: " + x.message; }
-  finally { btn.disabled = false; btn.textContent = "열기"; }
+  } catch (x) { err.textContent = "오류 Error: " + x.message; }
+  finally { btn.disabled = false; btn.textContent = "열기 Open"; }
 });
 
 async function start(ev) {
@@ -274,7 +280,7 @@ async function start(ev) {
   const res = await fetch("data.bin?v=" + META.ver);
   DATA = JSON.parse(new TextDecoder().decode(await decrypt(await res.arrayBuffer())));
   const last = store.get("ksc_seen_ver");
-  if (last && last !== META.ver) toast("새 자료로 업데이트되었습니다 (" + DATA.meta.builtAt + ")");
+  if (last && last !== META.ver) toast("새 자료로 업데이트되었습니다 / Updated to new data (" + DATA.meta.builtAt + ")");
   store.set("ksc_seen_ver", META.ver);
   logEvent(ev, "");
   route();
@@ -337,7 +343,7 @@ function hydrateImages(root) {
   const load = el => imgUrl(el.dataset.img).then(u => {
     if (!u) return; const im = new Image(); im.src = u; im.alt = ""; el.textContent = ""; el.appendChild(im);
     if (el.classList.contains("photo")) el.onclick = () => zoom(u);
-  }).catch(() => { el.textContent = "사진 없음"; });
+  }).catch(() => { el.textContent = "사진 없음 No photo"; });
   root.querySelectorAll("[data-img]").forEach(el => io ? io.observe(el) : load(el));
 }
 function zoom(u) {
@@ -413,63 +419,69 @@ function homeView(v) {
   const stores = e ? Object.keys(e.stores) : [];
   v.innerHTML = `
     <div class="hero"><div class="k">KSC USA</div><h2>KSC ERP</h2>
-      <div class="v">원가관리 · 레시피 — 업데이트 ${esc(m.builtAt)}</div></div>
+      <div class="v">원가관리 · 레시피 — 업데이트 ${esc(m.builtAt)}<span class="en2">Cost Management · Recipes — Updated ${esc(m.builtAt)}</span></div></div>
     <div class="big">
       <button class="bigbtn" onclick="location.hash='#/erp'"><div><div class="t">ERP</div>
-        <div class="e">매장별 매출 · P-Mix · 이론원가</div></div><div class="n">${stores.length ? stores.join(" · ") : "자료 없음"} ›</div></button>
-      <button class="bigbtn alt" onclick="location.hash='#/recipe'"><div><div class="t">레시피</div>
-        <div class="e">메뉴 · 런치 · 원재료단가 · 전처리</div></div><div class="n">레시피 ${fmtMonth(m.recipeMonth)} · 메뉴 ${count("menus") + count("lunch")}개 ›</div></button>
+        <div class="e">매장별 매출 · P-Mix · 이론원가<span class="en2">Sales · P-Mix · Theoretical Cost by Store</span></div></div><div class="n">${stores.length ? stores.join(" · ") : "자료 없음 No data"} ›</div></button>
+      <button class="bigbtn alt" onclick="location.hash='#/recipe'"><div><div class="t">레시피<span class="en2">Recipes</span></div>
+        <div class="e">메뉴 · 런치 · 원재료단가 · 전처리<span class="en2">Menu · Lunch · Ingredient Prices · Prep</span></div></div><div class="n">레시피 ${fmtMonth(m.recipeMonth)} · 메뉴 ${count("menus") + count("lunch")}개 ›<span class="en2">Recipes ${fmtMonth(m.recipeMonth)} · ${count("menus") + count("lunch")} menus</span></div></button>
     </div>
-    <div class="foot"><b style="color:var(--navy)">${esc(USER)}</b> 님으로 접속 중<br>
-      <button id="logout">이 기기에서 로그아웃</button></div>`;
+    <div class="foot"><b style="color:var(--navy)">${esc(USER)}</b> 님으로 접속 중<span class="en2">Signed in as ${esc(USER)}</span>
+      <button id="logout">이 기기에서 로그아웃 · Log out on this device</button></div>`;
   document.getElementById("logout").onclick = () => { logEvent("로그아웃", ""); store.del(LS_KEK); setTimeout(() => location.reload(), 300); };
 }
 
 /* ---------- 레시피 홈 ---------- */
 function recipeHome(v) {
-  setBar("레시피", true);
+  setBar(`레시피 <span class="sub">Recipes</span>`, true);
   const m = DATA.meta;
   const tile = (k, main) => `<button class="tile${main ? " main" : ""}" onclick="location.hash='#/${CATS[k].kind === "table" ? "t" : "list"}/${k}'">
-      <div><div class="t">${CATS[k].title}</div><div class="e">${CATS[k].en}</div></div><div class="n">${count(k)}개 ›</div></button>`;
+      <div><div class="t">${CATS[k].title}</div><div class="e">${CATS[k].en}</div></div><div class="n">${count(k)}개 items ›</div></button>`;
   v.innerHTML = `
-    <div class="hero"><div class="k">KSC USA · RECIPE</div><h2>레시피</h2>
-      <div class="v">레시피 ${fmtMonth(m.recipeMonth)} · 런치메뉴 ${fmtMonth(m.lunchMonth)}</div></div>
-    <div class="sec">메뉴 레시피</div>
+    <div class="hero"><div class="k">KSC USA · RECIPE</div><h2>레시피<span class="en2">Recipes</span></h2>
+      <div class="v">레시피 ${fmtMonth(m.recipeMonth)} · 런치메뉴 ${fmtMonth(m.lunchMonth)}<span class="en2">Recipes ${fmtMonth(m.recipeMonth)} · Lunch Menu ${fmtMonth(m.lunchMonth)}</span></div></div>
+    <div class="sec">메뉴 레시피 · Menu Recipes</div>
     <div class="grid">${tile("menus", true)}${tile("lunch", true)}</div>
-    <div class="sec">원가 · 전처리</div>
+    <div class="sec">원가 · 전처리 · Cost & Prep</div>
     <div class="grid">${tile("ingredients")}${tile("yield")}${tile("prepCost")}${tile("prepRecipes")}</div>
-    <div class="foot">원본: ${m.sources.map(esc).join("<br>")}${m.priceNote ? "<br>" + esc(m.priceNote) : ""}<br>업데이트 ${esc(m.builtAt)}</div>`;
+    <div class="foot">원본 Source: ${m.sources.map(esc).join("<br>")}${m.priceNote ? "<br>" + esc(m.priceNote) : ""}<br>업데이트 Updated ${esc(m.builtAt)}</div>`;
 }
 
 /* ---------- ERP ---------- */
 const ERP = () => DATA && DATA.erp;
 const monLabel = ym => `${ym.slice(0, 4)}년 ${+ym.slice(5, 7)}월`;
+const monEn = ym => new Date(+ym.slice(0, 4), +ym.slice(5, 7) - 1, 1).toLocaleString("en-US", { month: "short", year: "numeric" });
+const monChip = ym => `${monLabel(ym)}<span class="en2">${monEn(ym)}</span>`;
+const ST_EN = { "매핑필요": "매핑필요 Unmapped", "원가없음": "원가없음 No cost", "제외": "제외 Excluded" };
 const ratio = (a, b) => b ? a / b : null;
 function erpHome(v) {
   setBar("ERP", true);
   const e = ERP();
-  if (!e || !Object.keys(e.stores).length) { v.innerHTML = `<div class="empty">ERP 자료가 아직 없습니다</div>`; return; }
+  if (!e || !Object.keys(e.stores).length) { v.innerHTML = `<div class="empty">ERP 자료가 아직 없습니다<span class="en2">No ERP data yet</span></div>`; return; }
   v.innerHTML = `
-    <div class="hero"><div class="k">KSC USA · ERP</div><h2>매장 선택</h2>
-      <div class="v">매출 기준 ${esc(String(e.generatedAt || "").replace("T", " ").slice(0, 16))} · 매장별로 따로 관리</div></div>
+    <div class="hero"><div class="k">KSC USA · ERP</div><h2>매장 선택<span class="en2">Select Store</span></h2>
+      <div class="v">매출 기준 ${esc(String(e.generatedAt || "").replace("T", " ").slice(0, 16))} · 매장별로 따로 관리<span class="en2">Sales as of ${esc(String(e.generatedAt || "").replace("T", " ").slice(0, 16))} · Managed per store</span></div></div>
     <div class="big">${Object.entries(e.stores).map(([st, s], i) => {
       const mon = s.months[s.months.length - 1];
       const ds = s.days.filter(x => x.d.startsWith(mon));
       const net = ds.reduce((a, x) => a + (x.net || 0), 0), food = ds.reduce((a, x) => a + x.food, 0), theo = ds.reduce((a, x) => a + x.theo, 0);
       return `<button class="bigbtn${i ? " alt" : ""}" onclick="location.hash='#/erp/${st}'"><div><div class="t">${st}</div>
-        <div class="e">KSC ${st} · ${monLabel(mon)} (~${s.lastDate.slice(5)})</div></div>
-        <div class="n">Net ${usd(net, 0)} · 이론원가율 ${pct(ratio(theo, net))} ›</div></button>`;
+        <div class="e">KSC ${st} · ${monLabel(mon)} (~${s.lastDate.slice(5)})<span class="en2">${monEn(mon)} (through ${s.lastDate.slice(5)})</span></div></div>
+        <div class="n">Net ${usd(net, 0)} · 이론원가율 ${pct(ratio(theo, net))} ›<span class="en2">Theoretical Cost % ${pct(ratio(theo, net))}</span></div></button>`;
     }).join("")}</div>
-    <div class="sec">매장 비교</div>
+    <div class="sec">매장 비교 · Store Comparison</div>
     <div class="big">
-      <button class="bigbtn alt" onclick="location.hash='#/erp/cmp/pmix'"><div><div class="t">Pmix 비교</div>
-        <div class="e">Irvine · Brea 메뉴별 판매수량·매출·이론원가</div></div><div class="n">메뉴 비교 ›</div></button>
-      <button class="bigbtn alt" onclick="location.hash='#/erp/cmp/cost'"><div><div class="t">원가 비교</div>
-        <div class="e">기초재고 · 입고 · 기말재고 · 재고반영 원가율</div></div><div class="n">원가 비교 ›</div></button>
+      <button class="bigbtn alt" onclick="location.hash='#/erp/cmp/pmix'"><div><div class="t">Pmix 비교<span class="en2">P-Mix Comparison</span></div>
+        <div class="e">Irvine · Brea 메뉴별 판매수량·매출·이론원가<span class="en2">Qty · sales · theoretical cost by menu</span></div></div><div class="n">메뉴 비교 · Compare Menus ›</div></button>
+      <button class="bigbtn alt" onclick="location.hash='#/erp/cmp/cost'"><div><div class="t">원가 비교<span class="en2">Cost Comparison</span></div>
+        <div class="e">기초재고 · 입고 · 기말재고 · 재고반영 원가율<span class="en2">Opening inv. · Purchases · Closing inv. · Actual cost %</span></div></div><div class="n">원가 비교 · Compare Costs ›</div></button>
     </div>
     <div class="note">· Net Sales·P-Mix = 글로벌 매출 대시보드 (POS) 자동 수신<br>
       · 이론원가 = P-Mix(Food) 판매수량 × 메뉴 단위원가 — 단위원가·POS↔레시피 연결은 ERP 스프레드시트 '5-2 POS매핑' 기준<br>
-      · 이론원가율 = 이론원가 ÷ Net Sales<br>· 입고·재고 = 드라이브 매장별 Cost Calculation 시트 (매일 자동 수신) → 실제 푸드원가율</div>`;
+      · 이론원가율 = 이론원가 ÷ Net Sales<br>· 입고·재고 = 드라이브 매장별 Cost Calculation 시트 (매일 자동 수신) → 실제 푸드원가율
+      <span class="en2">· Net Sales & P-Mix: global sales dashboard (POS), received automatically<br>
+      · Theoretical cost = P-Mix (Food) qty × menu unit cost — unit cost & POS↔recipe mapping from ERP spreadsheet '5-2 POS Mapping'<br>
+      · Theoretical cost % = theoretical cost ÷ Net Sales<br>· Purchases & inventory: each store's Cost Calculation sheet on Google Drive (daily) → actual food cost %</span></div>`;
 }
 // 매장 비교 (Pmix 비교 / 원가 비교)
 function erpCmpView(v, kind, mon) {
@@ -477,16 +489,16 @@ function erpCmpView(v, kind, mon) {
   kind = kind === "cost" ? "cost" : "pmix";
   const mons = [...new Set(sts.flatMap(st => e.stores[st].months))].sort();
   mon = mons.includes(mon) ? mon : mons[mons.length - 1];
-  setBar(`${kind === "cost" ? "원가 비교" : "Pmix 비교"} <span class="sub">${monLabel(mon)}</span>`, true);
+  setBar(`${kind === "cost" ? "원가 비교" : "Pmix 비교"} <span class="sub">${kind === "cost" ? "Cost Comparison" : "P-Mix Comparison"} · ${monEn(mon)}</span>`, true);
   const D = {};
   sts.forEach(st => {
     const s = e.stores[st], ds = s.days.filter(x => x.d.startsWith(mon));
     D[st] = { s, ds, net: ds.reduce((a, x) => a + (x.net || 0), 0), theo: ds.reduce((a, x) => a + x.theo, 0),
       food: ds.reduce((a, x) => a + x.food, 0), last: ds.length ? ds[ds.length - 1].d.slice(5) : "-" };
   });
-  const head = `<div class="storehead">${[["pmix", "Pmix 비교"], ["cost", "원가 비교"]].map(([k, t]) => `<button class="chip${k === kind ? " on" : ""}" onclick="location.replace('#/erp/cmp/${k}/${mon}')">${t}</button>`).join("")}</div>
-    <div class="chips">${mons.slice().reverse().map(m => `<button class="chip${m === mon ? " on" : ""}" onclick="location.replace('#/erp/cmp/${kind}/${m}')">${monLabel(m)}</button>`).join("")}</div>`;
-  const th = `<th class="l">항목</th>${sts.map(st => `<th>${st}</th>`).join("")}`;
+  const head = `<div class="storehead">${[["pmix", "Pmix 비교" + "<span class=\"en2\">P-Mix Comparison</span>"], ["cost", "원가 비교" + "<span class=\"en2\">Cost Comparison</span>"]].map(([k, t]) => `<button class="chip${k === kind ? " on" : ""}" onclick="location.replace('#/erp/cmp/${k}/${mon}')">${t}</button>`).join("")}</div>
+    <div class="chips">${mons.slice().reverse().map(m => `<button class="chip${m === mon ? " on" : ""}" onclick="location.replace('#/erp/cmp/${kind}/${m}')">${monChip(m)}</button>`).join("")}</div>`;
+  const th = `<th class="l">항목<span class="en2">Item</span></th>${sts.map(st => `<th>${st}</th>`).join("")}`;
   if (kind === "cost") {
     const val = st => {
       const a = (D[st].s.actual || {})[mon] || null, net = D[st].net;
@@ -494,22 +506,25 @@ function erpCmpView(v, kind, mon) {
       return { a, net, use, ar: ratio(use, net), tr: ratio(D[st].theo, net) };
     };
     const V = Object.fromEntries(sts.map(st => [st, val(st)]));
-    const money = x => x == null ? `<span class="warn">미입력</span>` : usd(x, 0);
+    const money = x => x == null ? `<span class="warn">미입력 Not entered</span>` : usd(x, 0);
     const row = (lab, f, cls) => `<tr${cls ? ` class="${cls}"` : ""}><td class="l">${lab}</td>${sts.map(st => `<td>${f(V[st], st)}</td>`).join("")}</tr>`;
     v.innerHTML = `${head}
       <div class="tbl-wrap"><table class="dtable"><thead><tr>${th}</tr></thead><tbody>
-        ${row("기초재고금액", x => x.a ? money(x.a.open) : "-")}
-        ${row("입고금액", x => x.a ? usd(x.a.rcv, 0) : "-")}
-        ${row("기말재고금액", x => x.a ? money(x.a.close) : "-")}
-        ${row("사용금액 (기초+입고−기말)", x => x.use == null ? "-" : usd(x.use, 0))}
+        ${row("기초재고금액<span class=\"en2\">Opening Inventory</span>", x => x.a ? money(x.a.open) : "-")}
+        ${row("입고금액<span class=\"en2\">Purchases</span>", x => x.a ? usd(x.a.rcv, 0) : "-")}
+        ${row("기말재고금액<span class=\"en2\">Closing Inventory</span>", x => x.a ? money(x.a.close) : "-")}
+        ${row("사용금액 (기초+입고−기말)<span class=\"en2\">Usage (Opening + Purchases − Closing)</span>", x => x.use == null ? "-" : usd(x.use, 0))}
         ${row("Net Sales", x => usd(x.net, 0))}
-        ${row("재고반영 원가율 (Net Sales 기준)", x => x.ar == null ? "-" : `<b>${pct(x.ar)}</b>`, "grp")}
-        ${row("이론원가율 (참고)", x => pct(x.tr))}
-        ${row("차이 (재고반영 − 이론)", x => x.ar == null || x.tr == null ? "-" : `<b style="color:var(--red)">${x.ar - x.tr >= 0 ? "+" : ""}${fmt((x.ar - x.tr) * 100, 1)}%p</b>`)}
+        ${row("재고반영 원가율 (Net Sales 기준)<span class=\"en2\">Actual Food Cost % (inventory-adjusted, of Net Sales)</span>", x => x.ar == null ? "-" : `<b>${pct(x.ar)}</b>`, "grp")}
+        ${row("이론원가율 (참고)<span class=\"en2\">Theoretical Cost % (ref.)</span>", x => pct(x.tr))}
+        ${row("차이 (재고반영 − 이론)<span class=\"en2\">Variance (Actual − Theoretical)</span>", x => x.ar == null || x.tr == null ? "-" : `<b style="color:var(--red)">${x.ar - x.tr >= 0 ? "+" : ""}${fmt((x.ar - x.tr) * 100, 1)}%p</b>`)}
       </tbody></table></div>
       <div class="note">${monLabel(mon)} · 매출 기준일 ${sts.map(st => `${st} ~${D[st].last}`).join(" · ")}<br>
         재고반영 원가율 = (기초재고 + 입고 − 기말재고) ÷ Net Sales. 재고·입고 = 드라이브 매장별 Cost Calculation, Net Sales = 매출 대시보드.
-        기말재고가 '미입력'이면 드라이브 시트에 월말 재고가 아직 없는 것입니다.</div>`;
+        기말재고가 '미입력'이면 드라이브 시트에 월말 재고가 아직 없는 것입니다.
+        <span class="en2">${monEn(mon)} · Sales through ${sts.map(st => `${st} ${D[st].last}`).join(" · ")}<br>
+        Actual food cost % = (opening inventory + purchases − closing inventory) ÷ Net Sales. Inventory & purchases: each store's Cost Calculation sheet on Google Drive; Net Sales: sales dashboard.
+        'Not entered' means the month-end inventory is not yet in the Drive sheet.</span></div>`;
     return;
   }
   // Pmix 비교: 메뉴 이름으로 두 매장 합침
@@ -539,13 +554,13 @@ function erpCmpView(v, kind, mon) {
   const sub = sts.map(st => `<th>${st}</th>`).join("");
   v.innerHTML = `${head}
     <div class="kpis3">${sts.map((st, i) => `<div class="kpi${i ? "" : " dark"}"><div class="kl">${st} · Net Sales</div><div class="kv">${usd(D[st].net, 0)}</div>
-      <div class="ks">이론원가 ${usd(D[st].theo, 0)} · ${pct(ratio(D[st].theo, D[st].net))}</div></div>`).join("")}</div>
-    <div class="note">${monLabel(mon)} 누계 · Menu Group별 (이론원가 큰 순) · 같은 POS 메뉴 이름끼리 나란히 비교</div>
+      <div class="ks">이론원가 Theo. cost ${usd(D[st].theo, 0)} · ${pct(ratio(D[st].theo, D[st].net))}</div></div>`).join("")}</div>
+    <div class="note">${monLabel(mon)} 누계 · Menu Group별 (이론원가 큰 순) · 같은 POS 메뉴 이름끼리 나란히 비교<span class="en2">${monEn(mon)} month-to-date · by Menu Group (highest theoretical cost first) · same POS item names side by side</span></div>
     <div class="tbl-wrap"><table class="dtable"><thead>
-      <tr><th class="l" rowspan="2">메뉴 (Menu Group)</th><th colspan="${sts.length}">수량</th><th colspan="${sts.length}">매출</th><th colspan="${sts.length}">이론원가</th></tr>
+      <tr><th class="l" rowspan="2">메뉴 (Menu Group)</th><th colspan="${sts.length}">수량<span class="en2">Qty</span></th><th colspan="${sts.length}">매출<span class="en2">Sales</span></th><th colspan="${sts.length}">이론원가<span class="en2">Theo. Cost</span></th></tr>
       <tr>${sub}${sub}${sub}</tr></thead>
-      <tbody>${body || `<tr><td colspan="${1 + sts.length * 3}" class="l" style="text-align:center;padding:24px">판매 기록 없음</td></tr>`}</tbody>
-      <tfoot><tr><td class="l">합계</td>${cells(all)}</tr>
+      <tbody>${body || `<tr><td colspan="${1 + sts.length * 3}" class="l" style="text-align:center;padding:24px">판매 기록 없음 · No sales</td></tr>`}</tbody>
+      <tfoot><tr><td class="l">합계 Total</td>${cells(all)}</tr>
         <tr><td class="l">이론원가 ÷ Net Sales</td><td colspan="${sts.length * 2}"></td>${sts.map(st => `<td>${pct(ratio(D[st].theo, D[st].net))}</td>`).join("")}</tr></tfoot></table></div>`;
 }
 // 기간 P-Mix 집계: itemIdx → [qty, sales]
@@ -572,42 +587,42 @@ function pmixTable(s, agg, net) {
   }).sort((a, b) => b.gc - a.gc);
   const body = gl.map(({ g, rows, gq, gs, gc }) => `
     <tr class="grp"><td>${esc(g)}</td><td class="n">${qtyFmt(gq)}</td><td class="n">${usd(gs, 0)}</td><td></td><td class="n">${usd(gc, 0)}</td><td class="n">${pct(ratio(gc, net))}</td></tr>
-    ${rows.map(({ it, q, sl, cost }) => `<tr><td class="l">${esc(it[1])}${it[4] ? ` <span style="color:${it[4] === "제외" ? "var(--muted)" : "var(--red)"};font-size:11px">[${it[4]}]</span>` : ""}</td>
+    ${rows.map(({ it, q, sl, cost }) => `<tr><td class="l">${esc(it[1])}${it[4] ? ` <span style="color:${it[4] === "제외" ? "var(--muted)" : "var(--red)"};font-size:11px">[${ST_EN[it[4]] || it[4]}]</span>` : ""}</td>
       <td>${qtyFmt(q)}</td><td>${usd(sl, 0)}</td><td class="${it[2] == null ? "warn" : ""}">${it[2] == null ? "?" : usd(it[2])}</td>
       <td class="q">${cost == null ? "-" : usd(cost, 0)}</td><td>${pct(ratio(cost, net))}</td></tr>`).join("")}`).join("");
-  return `<div class="tbl-wrap"><table class="dtable"><thead><tr><th class="l">메뉴 (Menu Group)</th><th>수량</th><th>매출</th><th>단위원가</th><th>이론원가</th><th>Net 대비</th></tr></thead>
-    <tbody>${body || `<tr><td colspan="6" class="l" style="text-align:center;padding:24px">판매 기록 없음</td></tr>`}</tbody>
-    <tfoot><tr><td class="l">합계</td><td>${qtyFmt(tot.q)}</td><td>${usd(tot.sl, 0)}</td><td></td><td>${usd(tot.c, 0)}</td><td>${pct(ratio(tot.c, net))}</td></tr></tfoot></table></div>`;
+  return `<div class="tbl-wrap"><table class="dtable"><thead><tr><th class="l">메뉴 (Menu Group)</th><th>수량<span class="en2">Qty</span></th><th>매출<span class="en2">Sales</span></th><th>단위원가<span class="en2">Unit Cost</span></th><th>이론원가<span class="en2">Theo. Cost</span></th><th>Net 대비<span class="en2">% of Net</span></th></tr></thead>
+    <tbody>${body || `<tr><td colspan="6" class="l" style="text-align:center;padding:24px">판매 기록 없음 · No sales</td></tr>`}</tbody>
+    <tfoot><tr><td class="l">합계 Total</td><td>${qtyFmt(tot.q)}</td><td>${usd(tot.sl, 0)}</td><td></td><td>${usd(tot.c, 0)}</td><td>${pct(ratio(tot.c, net))}</td></tr></tfoot></table></div>`;
 }
 function erpKpis(net, food, theo, days, label) {
   return `<div class="kpis3">
-    <div class="kpi dark"><div class="kl">Net Sales ${label}</div><div class="kv">${usd(net, 0)}</div>${days > 1 ? `<div class="ks">${days}일 · 일평균 ${usd(net / days, 0)}</div>` : ""}</div>
-    <div class="kpi"><div class="kl">Food 매출 (P-Mix)</div><div class="kv">${usd(food, 0)}</div><div class="ks">Net 대비 ${pct(ratio(food, net))}</div></div>
-    <div class="kpi"><div class="kl">이론원가</div><div class="kv">${usd(theo, 0)}</div></div>
-    <div class="kpi alert"><div class="kl">이론원가율 (Net Sales 대비)</div><div class="kv">${pct(ratio(theo, net))}</div></div>
+    <div class="kpi dark"><div class="kl">Net Sales ${label}</div><div class="kv">${usd(net, 0)}</div>${days > 1 ? `<div class="ks">${days}일 · 일평균 ${usd(net / days, 0)}<span class="en2">${days} days · avg/day</span></div>` : ""}</div>
+    <div class="kpi"><div class="kl">Food 매출 (P-Mix)<span class="en2">Food Sales</span></div><div class="kv">${usd(food, 0)}</div><div class="ks">Net 대비 ${pct(ratio(food, net))} of Net</div></div>
+    <div class="kpi"><div class="kl">이론원가<span class="en2">Theoretical Cost</span></div><div class="kv">${usd(theo, 0)}</div></div>
+    <div class="kpi alert"><div class="kl">이론원가율 (Net Sales 대비)<span class="en2">Theoretical Cost % of Net Sales</span></div><div class="kv">${pct(ratio(theo, net))}</div></div>
   </div>`;
 }
 // 실제 푸드원가 (드라이브 Cost Calculation 입고·재고) vs 이론원가 — 모두 ÷ Net Sales
 function actualBlock(s, mon, net, theo, rcvSum) {
   const a = (s.actual || {})[mon];
-  if (!a) return `<div class="note">입고·재고 자료 없음 — 드라이브 '${monLabel(mon)} Cost Calculation' 파일을 아직 받지 못했습니다.</div>`;
+  if (!a) return `<div class="note">입고·재고 자료 없음 — 드라이브 '${monLabel(mon)} Cost Calculation' 파일을 아직 받지 못했습니다.<span class="en2">No purchase/inventory data — the ${monEn(mon)} Cost Calculation file has not been received from Google Drive yet.</span></div>`;
   const hasClose = a.close != null && a.open != null;
   const use = hasClose ? a.open + a.rcv - a.close : null;
   const ar = ratio(use, net), tr = ratio(theo, net), gap = ar != null && tr != null ? ar - tr : null;
-  const cats = ["채소", "육류", "가공식품", "마트·기타"].map((t, j) => `${t} ${usd(a.cats[j], 0)}`).join(" · ");
+  const cats = ["채소 Veg", "육류 Meat", "가공식품 Processed", "마트·기타 Mart/Other"].map((t, j) => `${t} ${usd(a.cats[j], 0)}`).join(" · ");
   const row = (l, v, cls) => `<tr${cls ? ` class="${cls}"` : ""}><td class="l">${l}</td><td>${v}</td></tr>`;
-  return `<div class="sec">실제 푸드원가 vs 이론원가 (Net Sales 대비)</div>
+  return `<div class="sec">실제 푸드원가 vs 이론원가 (Net Sales 대비) · Actual vs Theoretical Food Cost</div>
     <div class="tbl-wrap"><table class="dtable"><tbody>
-      ${row("기초재고 (전월 Inventory)", a.open == null ? "-" : usd(a.open, 0))}
-      ${row(`당월 입고 <span class="mut" style="font-size:11px">${cats}</span>`, usd(a.rcv, 0))}
-      ${row("기말재고 (당월 Inventory)", a.close == null ? `<span class="warn">드라이브 미입력</span>` : usd(a.close, 0))}
-      ${row("실제 푸드원가 (사용금액)", use == null ? "-" : usd(use, 0), "grp")}
-      ${row("실제 푸드원가율", ar == null ? "-" : pct(ar), "grp")}
-      ${row("이론원가율", pct(tr))}
-      ${row("차이 (실제 − 이론)", gap == null ? "-" : `<b style="color:var(--red)">${gap >= 0 ? "+" : ""}${fmt(gap * 100, 1)}%p</b>`)}
-      ${row("입고 ÷ Net Sales (참고)", pct(ratio(a.rcv, net)))}
+      ${row("기초재고 (전월 Inventory)<span class=\"en2\">Opening Inventory (prior month)</span>", a.open == null ? "-" : usd(a.open, 0))}
+      ${row(`당월 입고 <span class="mut" style="font-size:11px">${cats}</span><span class="en2">Purchases this month</span>`, usd(a.rcv, 0))}
+      ${row("기말재고 (당월 Inventory)<span class=\"en2\">Closing Inventory</span>", a.close == null ? `<span class="warn">드라이브 미입력 Not entered in Drive</span>` : usd(a.close, 0))}
+      ${row("실제 푸드원가 (사용금액)<span class=\"en2\">Actual Food Cost (usage)</span>", use == null ? "-" : usd(use, 0), "grp")}
+      ${row("실제 푸드원가율<span class=\"en2\">Actual Food Cost %</span>", ar == null ? "-" : pct(ar), "grp")}
+      ${row("이론원가율<span class=\"en2\">Theoretical Cost %</span>", pct(tr))}
+      ${row("차이 (실제 − 이론)<span class=\"en2\">Variance (Actual − Theoretical)</span>", gap == null ? "-" : `<b style="color:var(--red)">${gap >= 0 ? "+" : ""}${fmt(gap * 100, 1)}%p</b>`)}
+      ${row("입고 ÷ Net Sales (참고)<span class=\"en2\">Purchases ÷ Net Sales (ref.)</span>", pct(ratio(a.rcv, net)))}
     </tbody></table></div>
-    <div class="note">입고·재고 = 드라이브 Cost Calculation 시트 (수신 ${esc(a.updated || "")}). 실제 푸드원가 = 기초재고 + 입고 − 기말재고. 월 중에는 기말재고가 실사 전 값일 수 있습니다.</div>`;
+    <div class="note">입고·재고 = 드라이브 Cost Calculation 시트 (수신 ${esc(a.updated || "")}). 실제 푸드원가 = 기초재고 + 입고 − 기말재고. 월 중에는 기말재고가 실사 전 값일 수 있습니다.<span class="en2">Purchases & inventory: Google Drive Cost Calculation sheet (received ${esc(a.updated || "")}). Actual food cost = opening inventory + purchases − closing inventory. Mid-month, closing inventory may be before the physical count.</span></div>`;
 }
 function erpStoreView(v, st, mon, tab, arg) {
   const e = ERP(), s = e.stores[st];
@@ -619,16 +634,16 @@ function erpStoreView(v, st, mon, tab, arg) {
     setBar(`${st} <span class="sub">${arg.slice(5)} (${esc(x.w)})</span>`, true);
     const i = s.days.findIndex(d => d.d === arg);
     v.innerHTML = `${head}${erpKpis(x.net || 0, x.food, x.theo, 1, `${arg} (${x.w})`)}
-      ${x.guests != null ? `<div class="note">손님 ${fmt(x.guests)}명 · 계산 ${fmt(x.checks)}건${x.rcv ? ` · 입고 ${usd(x.rcv, 0)}` : ""}</div>` : ""}
-      <div class="sec">${arg} P-MIX · 이론원가</div>${pmixTable(s, erpAgg(s, [arg]), x.net)}
-      <div class="nav"><button id="pd" ${i <= 0 ? "disabled" : ""}>‹ 전날</button><div class="pg"></div><button id="nd" ${i < 0 || i >= s.days.length - 1 ? "disabled" : ""}>다음날 ›</button></div>`;
+      ${x.guests != null ? `<div class="note">손님 ${fmt(x.guests)}명 · 계산 ${fmt(x.checks)}건${x.rcv ? ` · 입고 ${usd(x.rcv, 0)}` : ""}<span class="en2">Guests ${fmt(x.guests)} · Checks ${fmt(x.checks)}${x.rcv ? ` · Purchases ${usd(x.rcv, 0)}` : ""}</span></div>` : ""}
+      <div class="sec">${arg} P-MIX · 이론원가 Theoretical Cost</div>${pmixTable(s, erpAgg(s, [arg]), x.net)}
+      <div class="nav"><button id="pd" ${i <= 0 ? "disabled" : ""}>‹ 전날 Prev</button><div class="pg"></div><button id="nd" ${i < 0 || i >= s.days.length - 1 ? "disabled" : ""}>다음날 Next ›</button></div>`;
     const go = j => location.replace(`#/erp/${st}/${s.days[j].d.slice(0, 7)}/day/${s.days[j].d}`);
     document.getElementById("pd").onclick = () => go(i - 1);
     document.getElementById("nd").onclick = () => go(i + 1);
     return;
   }
   tab = ["daily", "pmix", "map"].includes(tab) ? tab : "daily";
-  setBar(`${st} <span class="sub">${monLabel(mon)}</span>`, true);
+  setBar(`${st} <span class="sub">${monLabel(mon)} · ${monEn(mon)}</span>`, true);
   const ds = s.days.filter(x => x.d.startsWith(mon));
   const net = ds.reduce((a, x) => a + (x.net || 0), 0), food = ds.reduce((a, x) => a + x.food, 0), theo = ds.reduce((a, x) => a + x.theo, 0);
   const open = ds.filter(x => x.net).length;
@@ -636,27 +651,27 @@ function erpStoreView(v, st, mon, tab, arg) {
   const unm = [...agg.entries()].filter(([i]) => s.items[i][4] === "매핑필요" || s.items[i][4] === "원가없음");
   let body = "";
   if (tab === "daily") {
-    body = `<div class="tbl-wrap"><table class="dtable"><thead><tr><th>일자</th><th>Net Sales</th><th>Food</th><th>이론원가</th><th>원가율</th><th>입고</th></tr></thead><tbody>
+    body = `<div class="tbl-wrap"><table class="dtable"><thead><tr><th>일자<span class="en2">Date</span></th><th>Net Sales</th><th>Food</th><th>이론원가<span class="en2">Theo. Cost</span></th><th>원가율<span class="en2">Cost %</span></th><th>입고<span class="en2">Purchases</span></th></tr></thead><tbody>
       ${ds.slice().reverse().map(x => `<tr class="go" onclick="location.hash='#/erp/${st}/${mon}/day/${x.d}'">
         <td style="text-align:left">${x.d.slice(5)} <span style="color:var(--muted)">${esc(x.w)}</span></td>
         <td class="q">${x.net == null ? "-" : usd(x.net, 0)}</td><td>${usd(x.food, 0)}</td><td>${usd(x.theo, 0)}</td><td>${pct(ratio(x.theo, x.net))}</td><td class="mut">${x.rcv ? usd(x.rcv, 0) : "-"}</td></tr>`).join("")}</tbody>
-      <tfoot><tr><td style="text-align:left">합계</td><td>${usd(net, 0)}</td><td>${usd(food, 0)}</td><td>${usd(theo, 0)}</td><td>${pct(ratio(theo, net))}</td><td>${usd(ds.reduce((a, x) => a + (x.rcv || 0), 0), 0)}</td></tr></tfoot></table></div>
-      <div class="note">행을 누르면 그날의 메뉴별 P-Mix·이론원가를 봅니다. 입고 = 드라이브 Cost Calculation 일별 입고금액.</div>`;
+      <tfoot><tr><td style="text-align:left">합계 Total</td><td>${usd(net, 0)}</td><td>${usd(food, 0)}</td><td>${usd(theo, 0)}</td><td>${pct(ratio(theo, net))}</td><td>${usd(ds.reduce((a, x) => a + (x.rcv || 0), 0), 0)}</td></tr></tfoot></table></div>
+      <div class="note">행을 누르면 그날의 메뉴별 P-Mix·이론원가를 봅니다. 입고 = 드라이브 Cost Calculation 일별 입고금액.<span class="en2">Tap a row to see that day's P-Mix and theoretical cost by menu. Purchases = daily receiving amount from the Drive Cost Calculation sheet.</span></div>`;
   } else if (tab === "pmix") {
-    body = `<div class="note">${monLabel(mon)} 누계 · Menu Group별 (이론원가 큰 순) · Net 대비 = 이론원가 ÷ 기간 Net Sales</div>${pmixTable(s, agg, net)}`;
+    body = `<div class="note">${monLabel(mon)} 누계 · Menu Group별 (이론원가 큰 순) · Net 대비 = 이론원가 ÷ 기간 Net Sales<span class="en2">${monEn(mon)} month-to-date · by Menu Group (highest theoretical cost first) · % of Net = theoretical cost ÷ period Net Sales</span></div>${pmixTable(s, agg, net)}`;
   } else {
-    body = `<div class="note">아래 메뉴는 레시피와 연결되지 않아 이론원가에 빠져 있습니다. ERP 스프레드시트 <b>KSC ERP ${st}.xlsx → 5-2 POS매핑</b>에서 레시피를 고르거나 수동 단위원가를 입력하면 다음 업데이트 때 반영됩니다.<br>매핑 기준: ${esc(s.mapUpdated)}</div>
-      <div class="tbl-wrap"><table class="dtable"><thead><tr><th class="l">POS 메뉴</th><th class="l">Menu Group</th><th>수량</th><th>매출</th><th>상태</th></tr></thead><tbody>
-      ${unm.sort((a, b) => b[1][1] - a[1][1] || b[1][0] - a[1][0]).map(([i, [q, sl]]) => `<tr><td class="l">${esc(s.items[i][1])}</td><td class="l mut">${esc(s.items[i][0])}</td><td>${qtyFmt(q)}</td><td>${usd(sl, 0)}</td><td class="warn">${s.items[i][4]}</td></tr>`).join("")
-        || `<tr><td colspan="5" class="l" style="text-align:center;padding:24px">모두 연결됨</td></tr>`}</tbody></table></div>`;
+    body = `<div class="note">아래 메뉴는 레시피와 연결되지 않아 이론원가에 빠져 있습니다. ERP 스프레드시트 <b>KSC ERP ${st}.xlsx → 5-2 POS매핑</b>에서 레시피를 고르거나 수동 단위원가를 입력하면 다음 업데이트 때 반영됩니다.<br>매핑 기준: ${esc(s.mapUpdated)}<span class="en2">These menus are not linked to a recipe, so they are missing from theoretical cost. Pick a recipe or enter a manual unit cost in <b>KSC ERP ${st}.xlsx → 5-2 POS Mapping</b>; it applies at the next update. Mapping as of ${esc(s.mapUpdated)}</span></div>
+      <div class="tbl-wrap"><table class="dtable"><thead><tr><th class="l">POS 메뉴<span class="en2">POS Item</span></th><th class="l">Menu Group</th><th>수량<span class="en2">Qty</span></th><th>매출<span class="en2">Sales</span></th><th>상태<span class="en2">Status</span></th></tr></thead><tbody>
+      ${unm.sort((a, b) => b[1][1] - a[1][1] || b[1][0] - a[1][0]).map(([i, [q, sl]]) => `<tr><td class="l">${esc(s.items[i][1])}</td><td class="l mut">${esc(s.items[i][0])}</td><td>${qtyFmt(q)}</td><td>${usd(sl, 0)}</td><td class="warn">${ST_EN[s.items[i][4]] || s.items[i][4]}</td></tr>`).join("")
+        || `<tr><td colspan="5" class="l" style="text-align:center;padding:24px">모두 연결됨 · All mapped</td></tr>`}</tbody></table></div>`;
   }
   v.innerHTML = `${head}
-    <div class="chips">${s.months.slice().reverse().map(m => `<button class="chip${m === mon ? " on" : ""}" onclick="location.replace('#/erp/${st}/${m}/${tab}')">${monLabel(m)}</button>`).join("")}</div>
-    ${erpKpis(net, food, theo, open, monLabel(mon).slice(6) + " 누계")}
+    <div class="chips">${s.months.slice().reverse().map(m => `<button class="chip${m === mon ? " on" : ""}" onclick="location.replace('#/erp/${st}/${m}/${tab}')">${monChip(m)}</button>`).join("")}</div>
+    ${erpKpis(net, food, theo, open, monLabel(mon).slice(6) + " 누계 · " + monEn(mon) + " MTD")}
     ${actualBlock(s, mon, net, theo)}
-    <div class="tabs">${[["daily", "일별"], ["pmix", "메뉴 P-Mix"], ["map", `매핑필요 ${unm.length}`]].map(([k, t]) => `<button class="tab${k === tab ? " on" : ""}" onclick="location.replace('#/erp/${st}/${mon}/${k}')">${t}</button>`).join("")}</div>
+    <div class="tabs">${[["daily", "일별<span class=\"en2\">Daily</span>"], ["pmix", "메뉴 P-Mix<span class=\"en2\">Menu P-Mix</span>"], ["map", `매핑필요 ${unm.length}<span class="en2">Unmapped</span>`]].map(([k, t]) => `<button class="tab${k === tab ? " on" : ""}" onclick="location.replace('#/erp/${st}/${mon}/${k}')">${t}</button>`).join("")}</div>
     ${body}
-    <div class="foot">매출 기준 ${esc(String(e.generatedAt || "").replace("T", " ").slice(0, 16))} · 마지막 영업일 ${esc(s.lastDate)}</div>`;
+    <div class="foot">매출 기준 ${esc(String(e.generatedAt || "").replace("T", " ").slice(0, 16))} · 마지막 영업일 ${esc(s.lastDate)}<span class="en2">Sales as of ${esc(String(e.generatedAt || "").replace("T", " ").slice(0, 16))} · Last business day ${esc(s.lastDate)}</span></div>`;
 }
 const fmtMonth = s => s ? `${s.slice(0, 4)}.${s.slice(4)}` : "-";
 
@@ -664,9 +679,9 @@ const fmtMonth = s => s ? `${s.slice(0, 4)}.${s.slice(4)}` : "-";
 function recName(r) { return r.title || r.name; }
 function listView(v, k) {
   const c = CATS[k];
-  setBar(`${c.title} <span class="sub">${count(k)}</span>`, true);
+  setBar(`${c.title} <span class="sub">${c.en} · ${count(k)}</span>`, true);
   const items = DATA[k];
-  v.innerHTML = `<input class="search" type="search" placeholder="${c.title} 검색 (한글/영문)" id="q">
+  v.innerHTML = `<input class="search" type="search" placeholder="${c.title} 검색 · Search ${c.en} (한글/English)" id="q">
     <div class="list" id="lst"></div>`;
   const lst = document.getElementById("lst"), q = document.getElementById("q");
   const draw = () => {
@@ -674,11 +689,11 @@ function listView(v, k) {
     const rows = items.map((r, i) => [r, i]).filter(([r]) => !s || (recName(r) + " " + r.name + " " + r.ingredients.map(x => x.name).join(" ")).toLowerCase().includes(s));
     lst.innerHTML = rows.length ? rows.map(([r, i]) => {
       const price = metric(r, /판매가격|selling price/i);
-      const desc = [`재료 ${r.ingredients.length}`, r.steps.length ? `조리 ${r.steps.length}단계` : "", price != null ? usd(price, 0) : ""].filter(Boolean).join(" · ");
+      const desc = [`재료 ${r.ingredients.length} ingredients`, r.steps.length ? `조리 ${r.steps.length}단계 steps` : "", price != null ? usd(price, 0) : ""].filter(Boolean).join(" · ");
       return `<button class="item" onclick="location.hash='#/r/${k}/${i}'">
         <div class="thumb" ${r.photo ? `data-img="${r.photo}"` : ""}>${r.photo ? "" : "KSC"}</div>
         <div><div class="nm">${esc(recName(r))}</div><div class="ds">${desc}</div></div><div class="ar">›</div></button>`;
-    }).join("") : `<div class="empty">검색 결과가 없습니다</div>`;
+    }).join("") : `<div class="empty">검색 결과가 없습니다<span class="en2">No results</span></div>`;
     hydrateImages(lst);
   };
   q.oninput = draw; draw();
@@ -696,10 +711,10 @@ function buildSlides(r, k) {
   const pages = chunk(ings, 12);
   pages.forEach((rows, pi) => {
     const start = pi * 12;
-    S.push({ lab: `${lab} · 레시피`, title: name + (pages.length > 1 ? ` (${pi + 1}/${pages.length})` : ""), body: `
-      <table class="rtable"><thead><tr><th style="width:34px">No</th><th>재료</th><th style="width:82px">분량</th><th style="width:44px">단위</th></tr></thead>
+    S.push({ lab: `${lab} · 레시피 RECIPE`, title: name + (pages.length > 1 ? ` (${pi + 1}/${pages.length})` : ""), body: `
+      <table class="rtable"><thead><tr><th style="width:34px">No</th><th>재료<span class="en2">Ingredient</span></th><th style="width:82px">분량<span class="en2">Qty</span></th><th style="width:44px">단위<span class="en2">Unit</span></th></tr></thead>
       <tbody>${rows.map((x, j) => `<tr><td class="c">${start + j + 1}</td><td class="l">${esc(x.name)}</td><td class="q">${qtyFmt(x.qty)}</td><td class="c">${esc(x.unit)}</td></tr>`).join("")}</tbody>
-      ${pi === pages.length - 1 && r.total.qty != null ? `<tfoot><tr><td></td><td class="l">합계</td><td>${qtyFmt(r.total.qty)}</td><td class="c">g</td></tr></tfoot>` : ""}</table>` });
+      ${pi === pages.length - 1 && r.total.qty != null ? `<tfoot><tr><td></td><td class="l">합계 Total</td><td>${qtyFmt(r.total.qty)}</td><td class="c">g</td></tr></tfoot>` : ""}</table>` });
   });
   // 2) 원가 요약 + 대표 사진
   const price = metric(r, /판매가격|selling price/i);
@@ -711,33 +726,33 @@ function buildSlides(r, k) {
   const kp = [];
   if (price != null) kp.push(`<div class="kpi dark"><div class="kl">판매가격 Selling Price</div><div class="kv">${usd(price)}</div></div>`);
   kp.push(`<div class="kpi"><div class="kl">공급원가 Purchase Cost</div><div class="kv">${usd(sup ?? r.total.cost)}</div></div>`);
-  if (supR != null) kp.push(`<div class="kpi${tgtR != null && supR > tgtR ? " alert" : ""}"><div class="kl">공급원가율${tgtR != null ? ` (목표 ${pct(tgtR, 0)})` : ""}</div><div class="kv">${pct(supR)}</div></div>`);
+  if (supR != null) kp.push(`<div class="kpi${tgtR != null && supR > tgtR ? " alert" : ""}"><div class="kl">공급원가율 Purchase Cost Ratio${tgtR != null ? ` (목표 Target ${pct(tgtR, 0)})` : ""}</div><div class="kv">${pct(supR)}</div></div>`);
   if (selR != null) kp.push(`<div class="kpi"><div class="kl">판매원가율 Selling Cost Ratio</div><div class="kv">${pct(selR)}</div></div>`);
-  if (serv != null) kp.push(`<div class="kpi"><div class="kl">Serving 중량</div><div class="kv">${fmt(serv)} g</div></div>`);
-  if (r.total.gross != null) kp.push(`<div class="kpi"><div class="kl">사용 총중량 (Gross)</div><div class="kv">${fmt(r.total.gross)} g</div></div>`);
-  S.push({ lab: `${lab} · 원가 요약`, title: name, split: !!r.photo, body: `
+  if (serv != null) kp.push(`<div class="kpi"><div class="kl">Serving 중량 Weight</div><div class="kv">${fmt(serv)} g</div></div>`);
+  if (r.total.gross != null) kp.push(`<div class="kpi"><div class="kl">사용 총중량 (Gross)<span class="en2">Total Gross Weight</span></div><div class="kv">${fmt(r.total.gross)} g</div></div>`);
+  S.push({ lab: `${lab} · 원가 요약 COST SUMMARY`, title: name, split: !!r.photo, body: `
      ${r.photo ? `<div class="photo main" data-img="${r.photo}"></div>` : ""}
      <div><div class="kpis">${kp.join("")}</div>
-     ${supR != null && tgtR != null ? `<div class="lead" style="margin-top:10px">공급원가율 ${pct(supR)} — 목표 ${pct(tgtR, 0)} 대비 ${supR > tgtR ? `<b style="color:var(--red)">${fmt((supR - tgtR) * 100, 1)}%p 초과</b>` : `${fmt((tgtR - supR) * 100, 1)}%p 여유`}</div>` : ""}</div>` });
+     ${supR != null && tgtR != null ? `<div class="lead" style="margin-top:10px">공급원가율 ${pct(supR)} — 목표 ${pct(tgtR, 0)} 대비 ${supR > tgtR ? `<b style="color:var(--red)">${fmt((supR - tgtR) * 100, 1)}%p 초과</b>` : `${fmt((tgtR - supR) * 100, 1)}%p 여유`}<span class="en2">Purchase cost ratio ${pct(supR)} — ${supR > tgtR ? `<b style="color:var(--red)">${fmt((supR - tgtR) * 100, 1)}%p over</b>` : `${fmt((tgtR - supR) * 100, 1)}%p under`} target ${pct(tgtR, 0)}</span></div>` : ""}</div>` });
   // 3) 원가 상세
   const cpages = chunk(ings, 12);
   cpages.forEach((rows, pi) => {
-    S.push({ lab: `${lab} · 원가 상세`, title: name + (cpages.length > 1 ? ` (${pi + 1}/${cpages.length})` : ""), body: `
-      <table class="rtable"><thead><tr><th>재료</th><th style="width:52px">수율</th><th style="width:66px">총중량g</th><th style="width:64px">원가</th><th style="width:52px">비중</th></tr></thead>
+    S.push({ lab: `${lab} · 원가 상세 COST DETAIL`, title: name + (cpages.length > 1 ? ` (${pi + 1}/${cpages.length})` : ""), body: `
+      <table class="rtable"><thead><tr><th>재료<span class="en2">Ingredient</span></th><th style="width:52px">수율<span class="en2">Yield</span></th><th style="width:66px">총중량g<span class="en2">Gross g</span></th><th style="width:64px">원가<span class="en2">Cost</span></th><th style="width:52px">비중<span class="en2">Share</span></th></tr></thead>
       <tbody>${rows.map(x => `<tr><td class="l">${esc(x.name)}</td><td>${x.yield != null ? pct(x.yield, 0) : "-"}</td><td>${qtyFmt(x.gross)}</td><td class="q">${usd(x.cost)}</td><td>${pct(x.ratio)}</td></tr>`).join("")}</tbody>
-      ${pi === cpages.length - 1 ? `<tfoot><tr><td class="l">합계</td><td></td><td>${qtyFmt(r.total.gross)}</td><td>${usd(r.total.cost)}</td><td>100%</td></tr></tfoot>` : ""}</table>` });
+      ${pi === cpages.length - 1 ? `<tfoot><tr><td class="l">합계 Total</td><td></td><td>${qtyFmt(r.total.gross)}</td><td>${usd(r.total.cost)}</td><td>100%</td></tr></tfoot>` : ""}</table>` });
   });
   // 4) 주의사항
   if (r.caution) {
     const { ko, en } = splitKoEn(r.caution);
-    S.push({ lab: `${lab} · 주의사항`, title: name, body: `<div class="caution">${esc(ko)}</div>${en ? `<div class="lead" style="white-space:pre-line">${esc(en)}</div>` : ""}` });
+    S.push({ lab: `${lab} · 주의사항 CAUTION`, title: name, body: `<div class="caution">${esc(ko)}</div>${en ? `<div class="lead" style="white-space:pre-line">${esc(en)}</div>` : ""}` });
   }
   // 5) 조리 순서 — 한 장에 한 단계
   r.steps.forEach((s, i) => {
     const { ko, en } = splitKoEn(s.text);
     const m = ko.match(/^\s*(\d+)\s*[.)]\s*/);
     const no = m ? m[1] : i + 1;
-    S.push({ lab: `${lab} · 조리 순서 ${i + 1}/${r.steps.length}`, title: name, split: !!s.img, body: `
+    S.push({ lab: `${lab} · 조리 순서 STEP ${i + 1}/${r.steps.length}`, title: name, split: !!s.img, body: `
       ${s.img ? `<div class="photo step" data-img="${s.img}"></div>` : ""}
       <div class="steptext"><span class="stepno">${no}</span><div class="tx">${esc(ko.replace(/^\s*\d+\s*[.)]\s*/, ""))}${en ? `<span class="en">${esc(en)}</span>` : ""}</div></div>` });
   });
@@ -748,22 +763,22 @@ function recipeView(v, k, idx, start) {
   if (!r) { location.hash = "#/list/" + k; return; }
   setBar(esc(recName(r)), true);
   const S = buildSlides(r, k);
-  const jumps = [["레시피", 0]];
-  const ci = S.findIndex(s => /원가 요약/.test(s.lab)); if (ci >= 0) jumps.push(["원가", ci]);
-  const ui = S.findIndex(s => /주의사항/.test(s.lab)); if (ui >= 0) jumps.push(["주의사항", ui]);
-  const si = S.findIndex(s => /조리 순서/.test(s.lab)); if (si >= 0) jumps.push(["조리 순서", si]);
+  const jumps = [["레시피<span class=\"en2\">Recipe</span>", 0]];
+  const ci = S.findIndex(s => /원가 요약/.test(s.lab)); if (ci >= 0) jumps.push(["원가<span class=\"en2\">Cost</span>", ci]);
+  const ui = S.findIndex(s => /주의사항/.test(s.lab)); if (ui >= 0) jumps.push(["주의사항<span class=\"en2\">Caution</span>", ui]);
+  const si = S.findIndex(s => /조리 순서/.test(s.lab)); if (si >= 0) jumps.push(["조리 순서<span class=\"en2\">Steps</span>", si]);
   v.innerHTML = `
     <div class="chips">${jumps.map(([t, i]) => `<button class="chip" data-go="${i}">${t}</button>`).join("")}</div>
     <div class="deck-wrap"><div class="deck" id="deck">${S.map((s, i) => `
       <article class="slide">
         <div class="s-head"><div class="lab">${s.lab}</div><h3>${s.title}</h3></div>
         <div class="s-body${s.split ? " split" : ""}">${s.body}</div>
-        <div class="s-foot"><span>KSC USA · ${CATS[k].title}</span><b>${i + 1} / ${S.length}</b></div>
+        <div class="s-foot"><span>KSC USA · ${CATS[k].title} ${CATS[k].en}</span><b>${i + 1} / ${S.length}</b></div>
       </article>`).join("")}</div></div>
-    <div class="nav"><button id="prv">‹ 이전</button><div class="pg" id="pg"></div><button id="nxt">다음 ›</button></div>
+    <div class="nav"><button id="prv">‹ 이전 Prev</button><div class="pg" id="pg"></div><button id="nxt">다음 Next ›</button></div>
     <div class="nav" style="margin-top:8px">
-      <button id="prevRec" ${idx <= 0 ? "disabled" : ""}>‹ 이전 메뉴</button><div class="pg"></div>
-      <button id="nextRec" ${idx >= DATA[k].length - 1 ? "disabled" : ""}>다음 메뉴 ›</button></div>`;
+      <button id="prevRec" ${idx <= 0 ? "disabled" : ""}>‹ 이전 메뉴 Prev menu</button><div class="pg"></div>
+      <button id="nextRec" ${idx >= DATA[k].length - 1 ? "disabled" : ""}>다음 메뉴 Next menu ›</button></div>`;
   const deck = document.getElementById("deck"), pg = document.getElementById("pg");
   const cur = () => Math.round(deck.scrollLeft / (deck.firstElementChild.offsetWidth + 12));
   const go = i => deck.scrollTo({ left: Math.max(0, Math.min(S.length - 1, i)) * (deck.firstElementChild.offsetWidth + 12), behavior: "smooth" });
@@ -791,12 +806,15 @@ const COLFMT = {
   prepCost: [null, v => qtyFmt(v), v => usd(v, 2), v => usd(v, 5)],
 };
 const TEXTCOL = { ingredients: [1], yield: [0], prepCost: [0] };
+const COL_EN = { "코드": "Code", "품명": "Item", "규격": "Spec", "매입단가($)": "Purchase Price ($)", "가공단위": "Proc. Unit",
+  "가공수량": "Proc. Qty", "g당 단가($)": "Price per g ($)", "수율": "Yield", "전처리명": "Prep Item",
+  "사용 총중량(g)": "Total Gross (g)", "공급가($)": "Cost ($)", "g당 원가($)": "Cost per g ($)" };
 function tableView(v, k) {
   const c = CATS[k], t = DATA[k];
-  setBar(`${c.title} <span class="sub">${t.rows.length}</span>`, true);
+  setBar(`${c.title} <span class="sub">${c.en} · ${t.rows.length}</span>`, true);
   let sortCol = -1, asc = true;
-  v.innerHTML = `<input class="search" type="search" placeholder="${c.title} 검색 (품명·코드)" id="q"><div class="count" id="cnt"></div>
-    <div class="tbl-wrap"><table class="dtable"><thead><tr>${t.columns.map((h, i) => `<th data-i="${i}">${esc(h)}</th>`).join("")}</tr></thead><tbody id="tb"></tbody></table></div>`;
+  v.innerHTML = `<input class="search" type="search" placeholder="${c.title} 검색 · Search (품명·코드 name/code)" id="q"><div class="count" id="cnt"></div>
+    <div class="tbl-wrap"><table class="dtable"><thead><tr>${t.columns.map((h, i) => `<th data-i="${i}">${esc(h)}${COL_EN[h] ? `<span class="en2">${COL_EN[h]}</span>` : ""}</th>`).join("")}</tr></thead><tbody id="tb"></tbody></table></div>`;
   const tb = document.getElementById("tb"), q = document.getElementById("q");
   const fm = COLFMT[k] || [], tc = TEXTCOL[k] || [];
   const draw = () => {
@@ -807,9 +825,9 @@ function tableView(v, k) {
       const r = typeof x === "number" && typeof y === "number" ? x - y : String(x ?? "").localeCompare(String(y ?? ""), "ko");
       return asc ? r : -r;
     });
-    document.getElementById("cnt").textContent = `${rows.length}개 항목 · 머리글을 누르면 정렬`;
+    document.getElementById("cnt").textContent = `${rows.length}개 항목 · 머리글을 누르면 정렬 / ${rows.length} items · tap a header to sort`;
     tb.innerHTML = rows.map(r => `<tr>${r.map((x, i) => `<td class="${tc.includes(i) ? "l" : ""}">${fm[i] && x != null && x !== "" ? fm[i](x) : esc(x ?? "")}</td>`).join("")}</tr>`).join("")
-      || `<tr><td colspan="${t.columns.length}" class="l" style="text-align:center;padding:24px">검색 결과가 없습니다</td></tr>`;
+      || `<tr><td colspan="${t.columns.length}" class="l" style="text-align:center;padding:24px">검색 결과가 없습니다 · No results</td></tr>`;
   };
   v.querySelectorAll("th").forEach(th => th.onclick = () => { const i = +th.dataset.i; asc = sortCol === i ? !asc : true; sortCol = i; draw(); });
   q.oninput = draw; draw();
