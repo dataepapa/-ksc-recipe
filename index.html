@@ -539,7 +539,7 @@ function erpCmpView(v, kind, mon) {
       const it = s.items[i], k = it[1];
       if (!rows.has(k)) rows.set(k, { name: k, g: it[0], v: {} });
       const r = rows.get(k);
-      r.v[st] = { q, sl, c: it[2] != null ? q * it[2] : 0 };
+      r.v[st] = { q, sl, c: it[2] != null ? q * it[2] : 0, cr: it[2] != null && it[5] ? it[2] / it[5] : null };   // 메뉴 원가 ÷ 판매가
     });
   });
   const groups = new Map();
@@ -554,15 +554,15 @@ function erpCmpView(v, kind, mon) {
     .sort((a, b) => b.c - a.c);
   const body = gl.map(({ g, list }) => `<tr class="grp"><td>${esc(g)}</td>${cells(list, true)}</tr>` +
     list.sort((a, b) => sts.reduce((t, st) => t + (b.v[st]?.q || 0) - (a.v[st]?.q || 0), 0))
-      .map(r => {   // 메뉴 이름 옆 매장별 메뉴 원가율 = 이론원가 ÷ 메뉴 매출
-        const cr = sts.filter(st => r.v[st] && r.v[st].sl && r.v[st].c).map(st => `${st} ${pct(r.v[st].c / r.v[st].sl)}`).join(" · ");
+      .map(r => {   // 메뉴 이름 옆 매장별 메뉴 원가율 = 메뉴 원가 ÷ 판매가 (레시피 판매가)
+        const cr = sts.filter(st => r.v[st] && r.v[st].cr != null).map(st => `${st} ${pct(r.v[st].cr)}`).join(" · ");
         return `<tr><td class="l">${esc(r.name)}${cr ? ` <span class="cr">(${cr})</span>` : ""}</td>${cells([r])}</tr>`;
       }).join("")).join("");
   const sub = sts.map(st => `<th>${st}</th>`).join("");
   v.innerHTML = `${head}
     <div class="kpis3">${sts.map((st, i) => `<div class="kpi${i ? "" : " dark"}"><div class="kl">${st} · Net Sales</div><div class="kv">${usd(D[st].net, 0)}</div>
       <div class="ks">이론원가 Theo. cost ${usd(D[st].theo, 0)} · ${pct(ratio(D[st].theo, D[st].net))}</div></div>`).join("")}</div>
-    <div class="note">${monLabel(mon)} 누계 · Menu Group별 (이론원가 큰 순) · 같은 POS 메뉴 이름끼리 나란히 비교 · <b style="color:#E8710A">(%)</b> = 메뉴 원가율 (이론원가 ÷ 메뉴 매출)<span class="en2">${monEn(mon)} month-to-date · by Menu Group (highest theoretical cost first) · same POS item names side by side · <b style="color:#E8710A">(%)</b> = menu cost % (theoretical cost ÷ menu sales)</span></div>
+    <div class="note">${monLabel(mon)} 누계 · Menu Group별 (이론원가 큰 순) · 같은 POS 메뉴 이름끼리 나란히 비교 · <b style="color:#E8710A">(%)</b> = 메뉴 원가율 (메뉴 원가 ÷ 판매가)<span class="en2">${monEn(mon)} month-to-date · by Menu Group (highest theoretical cost first) · same POS item names side by side · <b style="color:#E8710A">(%)</b> = menu cost % (menu cost ÷ menu price)</span></div>
     <div class="tbl-wrap"><table class="dtable cmp"><thead>
       <tr><th class="l" rowspan="2">메뉴 (Menu Group) <span style="color:#FFB067">(원가율)</span><span class="en2">Menu (cost %)</span></th><th colspan="${sts.length}">수량<span class="en2">Qty</span></th><th colspan="${sts.length}">매출<span class="en2">Sales</span></th></tr>
       <tr>${sub}${sub}</tr></thead>
