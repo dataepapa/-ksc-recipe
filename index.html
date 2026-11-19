@@ -457,11 +457,11 @@ function erpHome(v) {
       const net = ds.reduce((a, x) => a + (x.net || 0), 0), food = ds.reduce((a, x) => a + x.food, 0), theo = ds.reduce((a, x) => a + x.theo, 0);
       return `<button class="bigbtn${i ? " alt" : ""}" onclick="location.hash='#/erp/${st}'"><div><div class="t">${st}</div>
         <div class="e">KSC ${st} · ${monLabel(mon)} (~${s.lastDate.slice(5)})</div></div>
-        <div class="n">Net ${usd(net, 0)} · 이론원가율 ${pct(ratio(theo, food))} ›</div></button>`;
+        <div class="n">Net ${usd(net, 0)} · 이론원가율 ${pct(ratio(theo, net))} ›</div></button>`;
     }).join("")}</div>
     <div class="note">· Net Sales·P-Mix = 글로벌 매출 대시보드 (POS) 자동 수신<br>
       · 이론원가 = P-Mix(Food) 판매수량 × 메뉴 단위원가 — 단위원가·POS↔레시피 연결은 ERP 스프레드시트 '5-2 POS매핑' 기준<br>
-      · 이론원가율 = 이론원가 ÷ Food 매출(P-Mix)</div>`;
+      · 이론원가율 = 이론원가 ÷ Net Sales</div>`;
 }
 // 기간 P-Mix 집계: itemIdx → [qty, sales]
 function erpAgg(s, dates) {
@@ -471,7 +471,7 @@ function erpAgg(s, dates) {
   }));
   return m;
 }
-function pmixTable(s, agg) {
+function pmixTable(s, agg, net) {
   const groups = new Map();
   agg.forEach(([q, sl], i) => {
     const it = s.items[i], cost = it[2] != null ? q * it[2] : null;
@@ -486,20 +486,20 @@ function pmixTable(s, agg) {
     return { g, rows, gq, gs, gc };
   }).sort((a, b) => b.gc - a.gc);
   const body = gl.map(({ g, rows, gq, gs, gc }) => `
-    <tr class="grp"><td>${esc(g)}</td><td class="n">${qtyFmt(gq)}</td><td class="n">${usd(gs, 0)}</td><td></td><td class="n">${usd(gc, 0)}</td><td class="n">${pct(ratio(gc, gs))}</td></tr>
+    <tr class="grp"><td>${esc(g)}</td><td class="n">${qtyFmt(gq)}</td><td class="n">${usd(gs, 0)}</td><td></td><td class="n">${usd(gc, 0)}</td><td class="n">${pct(ratio(gc, net))}</td></tr>
     ${rows.map(({ it, q, sl, cost }) => `<tr><td class="l">${esc(it[1])}${it[4] ? ` <span style="color:${it[4] === "제외" ? "var(--muted)" : "var(--red)"};font-size:11px">[${it[4]}]</span>` : ""}</td>
       <td>${qtyFmt(q)}</td><td>${usd(sl, 0)}</td><td class="${it[2] == null ? "warn" : ""}">${it[2] == null ? "?" : usd(it[2])}</td>
-      <td class="q">${cost == null ? "-" : usd(cost, 0)}</td><td>${pct(ratio(cost, sl))}</td></tr>`).join("")}`).join("");
-  return `<div class="tbl-wrap"><table class="dtable"><thead><tr><th class="l">메뉴 (Menu Group)</th><th>수량</th><th>매출</th><th>단위원가</th><th>이론원가</th><th>원가율</th></tr></thead>
+      <td class="q">${cost == null ? "-" : usd(cost, 0)}</td><td>${pct(ratio(cost, net))}</td></tr>`).join("")}`).join("");
+  return `<div class="tbl-wrap"><table class="dtable"><thead><tr><th class="l">메뉴 (Menu Group)</th><th>수량</th><th>매출</th><th>단위원가</th><th>이론원가</th><th>Net 대비</th></tr></thead>
     <tbody>${body || `<tr><td colspan="6" class="l" style="text-align:center;padding:24px">판매 기록 없음</td></tr>`}</tbody>
-    <tfoot><tr><td class="l">합계</td><td>${qtyFmt(tot.q)}</td><td>${usd(tot.sl, 0)}</td><td></td><td>${usd(tot.c, 0)}</td><td>${pct(ratio(tot.c, tot.sl))}</td></tr></tfoot></table></div>`;
+    <tfoot><tr><td class="l">합계</td><td>${qtyFmt(tot.q)}</td><td>${usd(tot.sl, 0)}</td><td></td><td>${usd(tot.c, 0)}</td><td>${pct(ratio(tot.c, net))}</td></tr></tfoot></table></div>`;
 }
 function erpKpis(net, food, theo, days, label) {
   return `<div class="kpis3">
     <div class="kpi dark"><div class="kl">Net Sales ${label}</div><div class="kv">${usd(net, 0)}</div>${days > 1 ? `<div class="ks">${days}일 · 일평균 ${usd(net / days, 0)}</div>` : ""}</div>
     <div class="kpi"><div class="kl">Food 매출 (P-Mix)</div><div class="kv">${usd(food, 0)}</div><div class="ks">Net 대비 ${pct(ratio(food, net))}</div></div>
-    <div class="kpi"><div class="kl">이론원가</div><div class="kv">${usd(theo, 0)}</div><div class="ks">Net 대비 ${pct(ratio(theo, net))}</div></div>
-    <div class="kpi alert"><div class="kl">이론원가율 (Food 대비)</div><div class="kv">${pct(ratio(theo, food))}</div></div>
+    <div class="kpi"><div class="kl">이론원가</div><div class="kv">${usd(theo, 0)}</div></div>
+    <div class="kpi alert"><div class="kl">이론원가율 (Net Sales 대비)</div><div class="kv">${pct(ratio(theo, net))}</div></div>
   </div>`;
 }
 function erpStoreView(v, st, mon, tab, arg) {
@@ -513,7 +513,7 @@ function erpStoreView(v, st, mon, tab, arg) {
     const i = s.days.findIndex(d => d.d === arg);
     v.innerHTML = `${head}${erpKpis(x.net || 0, x.food, x.theo, 1, `${arg} (${x.w})`)}
       ${x.guests != null ? `<div class="note">손님 ${fmt(x.guests)}명 · 계산 ${fmt(x.checks)}건</div>` : ""}
-      <div class="sec">${arg} P-MIX · 이론원가</div>${pmixTable(s, erpAgg(s, [arg]))}
+      <div class="sec">${arg} P-MIX · 이론원가</div>${pmixTable(s, erpAgg(s, [arg]), x.net)}
       <div class="nav"><button id="pd" ${i <= 0 ? "disabled" : ""}>‹ 전날</button><div class="pg"></div><button id="nd" ${i < 0 || i >= s.days.length - 1 ? "disabled" : ""}>다음날 ›</button></div>`;
     const go = j => location.replace(`#/erp/${st}/${s.days[j].d.slice(0, 7)}/day/${s.days[j].d}`);
     document.getElementById("pd").onclick = () => go(i - 1);
@@ -532,11 +532,11 @@ function erpStoreView(v, st, mon, tab, arg) {
     body = `<div class="tbl-wrap"><table class="dtable"><thead><tr><th>일자</th><th>Net Sales</th><th>Food</th><th>이론원가</th><th>원가율</th></tr></thead><tbody>
       ${ds.slice().reverse().map(x => `<tr class="go" onclick="location.hash='#/erp/${st}/${mon}/day/${x.d}'">
         <td style="text-align:left">${x.d.slice(5)} <span style="color:var(--muted)">${esc(x.w)}</span></td>
-        <td class="q">${x.net == null ? "-" : usd(x.net, 0)}</td><td>${usd(x.food, 0)}</td><td>${usd(x.theo, 0)}</td><td>${pct(ratio(x.theo, x.food))}</td></tr>`).join("")}</tbody>
-      <tfoot><tr><td style="text-align:left">합계</td><td>${usd(net, 0)}</td><td>${usd(food, 0)}</td><td>${usd(theo, 0)}</td><td>${pct(ratio(theo, food))}</td></tr></tfoot></table></div>
+        <td class="q">${x.net == null ? "-" : usd(x.net, 0)}</td><td>${usd(x.food, 0)}</td><td>${usd(x.theo, 0)}</td><td>${pct(ratio(x.theo, x.net))}</td></tr>`).join("")}</tbody>
+      <tfoot><tr><td style="text-align:left">합계</td><td>${usd(net, 0)}</td><td>${usd(food, 0)}</td><td>${usd(theo, 0)}</td><td>${pct(ratio(theo, net))}</td></tr></tfoot></table></div>
       <div class="note">행을 누르면 그날의 메뉴별 P-Mix·이론원가를 봅니다.</div>`;
   } else if (tab === "pmix") {
-    body = `<div class="note">${monLabel(mon)} 누계 · Menu Group별 (이론원가 큰 순)</div>${pmixTable(s, agg)}`;
+    body = `<div class="note">${monLabel(mon)} 누계 · Menu Group별 (이론원가 큰 순) · Net 대비 = 이론원가 ÷ 기간 Net Sales</div>${pmixTable(s, agg, net)}`;
   } else {
     body = `<div class="note">아래 메뉴는 레시피와 연결되지 않아 이론원가에 빠져 있습니다. ERP 스프레드시트 <b>KSC ERP ${st}.xlsx → 5-2 POS매핑</b>에서 레시피를 고르거나 수동 단위원가를 입력하면 다음 업데이트 때 반영됩니다.<br>매핑 기준: ${esc(s.mapUpdated)}</div>
       <div class="tbl-wrap"><table class="dtable"><thead><tr><th class="l">POS 메뉴</th><th class="l">Menu Group</th><th>수량</th><th>매출</th><th>상태</th></tr></thead><tbody>
