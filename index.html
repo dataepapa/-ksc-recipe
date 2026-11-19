@@ -164,6 +164,16 @@ main{max-width:980px;margin:0 auto;padding:16px 16px calc(28px + var(--safe-b))}
 .dtable .cr{color:#E8710A;font-size:10.5px;font-weight:700;margin-left:3px}
 .dtable td.mut,.dtable .mut{color:var(--muted)}
 .dtable th.l{text-align:left}
+/* 일별: A = Net·이론원가·이론원가율(파랑) / B = 입고금액·당일원가율(주황) 비교 */
+.dtable th.ga{background:var(--blue)}
+.dtable th.gb{background:#C25E00}
+.dtable td.ga,.dtable tr:nth-child(even) td.ga{background:#E6F1FA}
+.dtable td.gb,.dtable tr:nth-child(even) td.gb{background:#FDF0E3}
+.dtable tfoot td.ga{background:#CFE3F4}
+.dtable tfoot td.gb{background:#F9DDBF}
+.dtable th.gb.s,.dtable td.gb.s{border-left:3px solid #C25E00}
+.dtable td.ga.r{color:var(--blueDark);font-weight:700}
+.dtable td.gb.r{color:#B35500;font-weight:700}
 .note{font-size:12px;color:var(--muted);margin:8px 0;line-height:1.6}
 .storehead{display:flex;gap:8px;margin-bottom:10px}
 .storehead .chip{font-size:14px;padding:8px 16px;font-weight:700}
@@ -656,12 +666,13 @@ function erpStoreView(v, st, mon, tab, arg) {
   const unm = [...agg.entries()].filter(([i]) => s.items[i][4] === "매핑필요" || s.items[i][4] === "원가없음");
   let body = "";
   if (tab === "daily") {
-    body = `<div class="tbl-wrap"><table class="dtable"><thead><tr><th>일자<span class="en2">Date</span></th><th>Net Sales</th><th>Food</th><th>이론원가<span class="en2">Theo. Cost</span></th><th>원가율<span class="en2">Cost %</span></th><th>입고<span class="en2">Purchases</span></th></tr></thead><tbody>
+    const rcvSum = ds.reduce((a, x) => a + (x.rcv || 0), 0);
+    body = `<div class="tbl-wrap"><table class="dtable"><thead><tr><th>일자<span class="en2">Date</span></th><th class="ga">Net Sales</th><th class="ga">이론원가<span class="en2">Theo. Cost</span></th><th class="ga">이론원가율<span class="en2">Theo. %</span></th><th class="gb s">입고금액<span class="en2">Purchases</span></th><th class="gb">당일원가<span class="en2">Daily Cost %</span></th></tr></thead><tbody>
       ${ds.slice().reverse().map(x => `<tr class="go" onclick="location.hash='#/erp/${st}/${mon}/day/${x.d}'">
         <td style="text-align:left">${x.d.slice(5)} <span style="color:var(--muted)">${esc(x.w)}</span></td>
-        <td class="q">${x.net == null ? "-" : usd(x.net, 0)}</td><td>${usd(x.food, 0)}</td><td>${usd(x.theo, 0)}</td><td>${pct(ratio(x.theo, x.net))}</td><td class="mut">${x.rcv ? usd(x.rcv, 0) : "-"}</td></tr>`).join("")}</tbody>
-      <tfoot><tr><td style="text-align:left">합계 Total</td><td>${usd(net, 0)}</td><td>${usd(food, 0)}</td><td>${usd(theo, 0)}</td><td>${pct(ratio(theo, net))}</td><td>${usd(ds.reduce((a, x) => a + (x.rcv || 0), 0), 0)}</td></tr></tfoot></table></div>
-      <div class="note">행을 누르면 그날의 메뉴별 P-Mix·이론원가를 봅니다. 입고 = 드라이브 Cost Calculation 일별 입고금액.<span class="en2">Tap a row to see that day's P-Mix and theoretical cost by menu. Purchases = daily receiving amount from the Drive Cost Calculation sheet.</span></div>`;
+        <td class="ga">${x.net == null ? "-" : usd(x.net, 0)}</td><td class="ga">${usd(x.theo, 0)}</td><td class="ga r">${pct(ratio(x.theo, x.net))}</td><td class="gb s">${x.rcv ? usd(x.rcv, 0) : "-"}</td><td class="gb r">${x.rcv ? pct(ratio(x.rcv, x.net)) : "-"}</td></tr>`).join("")}</tbody>
+      <tfoot><tr><td style="text-align:left">합계 Total</td><td class="ga">${usd(net, 0)}</td><td class="ga">${usd(theo, 0)}</td><td class="ga r">${pct(ratio(theo, net))}</td><td class="gb s">${usd(rcvSum, 0)}</td><td class="gb r">${pct(ratio(rcvSum, net))}</td></tr></tfoot></table></div>
+      <div class="note"><b style="color:var(--blueDark)">파랑</b> = 판매 기준 이론원가 · <b style="color:#B35500">주황</b> = 입고 기준 당일원가 (입고금액 ÷ Net Sales). 행을 누르면 그날의 메뉴별 P-Mix·이론원가를 봅니다. 입고 = 드라이브 Cost Calculation 일별 입고금액.<span class="en2">Blue = theoretical cost from sales · Orange = daily cost from purchases (purchases ÷ Net Sales). Tap a row to see that day's P-Mix and theoretical cost by menu. Purchases = daily receiving amount from the Drive Cost Calculation sheet.</span></div>`;
   } else if (tab === "pmix") {
     body = `<div class="note">${monLabel(mon)} 누계 · Menu Group별 (이론원가 큰 순) · Net 대비 = 이론원가 ÷ 기간 Net Sales<span class="en2">${monEn(mon)} month-to-date · by Menu Group (highest theoretical cost first) · % of Net = theoretical cost ÷ period Net Sales</span></div>${pmixTable(s, agg, net)}`;
   } else {
