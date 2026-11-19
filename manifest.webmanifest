@@ -1,6 +1,6 @@
 {
-  "name": "KSC ERP",
-  "short_name": "KSC ERP",
+  "name": "KSC Kitchen",
+  "short_name": "KSC Kitchen",
   "start_url": "./",
   "scope": "./",
   "display": "standalone",

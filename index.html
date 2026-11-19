@@ -6,9 +6,9 @@
 <meta name="theme-color" content="#0D2B4E">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-<meta name="apple-mobile-web-app-title" content="KSC ERP">
+<meta name="apple-mobile-web-app-title" content="KSC Kitchen">
 <meta name="robots" content="noindex,nofollow">
-<title>KSC ERP</title>
+<title>KSC Kitchen</title>
 <link rel="manifest" href="manifest.webmanifest">
 <link rel="icon" href="icon-192.png">
 <link rel="apple-touch-icon" href="icon-192.png">
@@ -180,7 +180,7 @@ main{max-width:980px;margin:0 auto;padding:16px 16px calc(28px + var(--safe-b))}
 <section id="login" class="hidden">
   <div class="card">
     <div class="brand">KSC USA</div>
-    <h2>KSC ERP</h2>
+    <h2>KSC Kitchen</h2>
     <p>이름과 개인 비밀번호를 입력하세요. 한 번 입력하면 이 기기에 기억됩니다.<span class="en2">Enter your name and personal password. It will be remembered on this device.</span><span style="display:block;margin-top:6px;color:var(--muted);font-size:12px">※ 열람 기록(이름·시간·기기)이 남습니다.<span class="en2">Access is logged (name, time, device).</span></span></p>
     <form id="loginForm">
       <input id="nm" type="text" autocomplete="username" placeholder="이름 Name (예: 홍길동)" style="margin-bottom:8px">
@@ -194,7 +194,7 @@ main{max-width:980px;margin:0 auto;padding:16px 16px calc(28px + var(--safe-b))}
 <div id="app" class="hidden">
   <header class="bar">
     <button class="back hidden" id="backBtn" aria-label="뒤로">‹</button>
-    <h1 id="title">KSC ERP</h1>
+    <h1 id="title">KSC Kitchen</h1>
   </header>
   <main id="view"><div id="loading">불러오는 중…<span class="en2">Loading…</span></div></main>
 </div>
@@ -418,11 +418,11 @@ function route() {
 
 /* ---------- 첫 화면: ERP / 레시피 ---------- */
 function homeView(v) {
-  setBar("KSC ERP", false);
+  setBar("KSC Kitchen", false);
   const m = DATA.meta, e = ERP();
   const stores = e ? Object.keys(e.stores) : [];
   v.innerHTML = `
-    <div class="hero"><div class="k">KSC USA</div><h2>KSC ERP</h2>
+    <div class="hero"><div class="k">KSC USA</div><h2>KSC Kitchen</h2>
       <div class="v">원가관리 · 레시피 — 업데이트 ${esc(m.builtAt)}<span class="en2">Cost Management · Recipes — Updated ${esc(m.builtAt)}</span></div></div>
     <div class="big">
       <button class="bigbtn" onclick="location.hash='#/erp'"><div><div class="t">ERP</div>
