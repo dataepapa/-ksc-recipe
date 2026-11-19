@@ -505,7 +505,7 @@ function erpCmpView(v, kind, mon) {
         ${row("Net Sales", x => usd(x.net, 0))}
         ${row("재고반영 원가율 (Net Sales 기준)", x => x.ar == null ? "-" : `<b>${pct(x.ar)}</b>`, "grp")}
         ${row("이론원가율 (참고)", x => pct(x.tr))}
-        ${row("차이 (재고반영 − 이론)", x => x.ar == null || x.tr == null ? "-" : `<b style="color:${x.ar - x.tr > 0.02 ? "var(--red)" : "inherit"}">${x.ar - x.tr >= 0 ? "+" : ""}${fmt((x.ar - x.tr) * 100, 1)}%p</b>`)}
+        ${row("차이 (재고반영 − 이론)", x => x.ar == null || x.tr == null ? "-" : `<b style="color:var(--red)">${x.ar - x.tr >= 0 ? "+" : ""}${fmt((x.ar - x.tr) * 100, 1)}%p</b>`)}
       </tbody></table></div>
       <div class="note">${monLabel(mon)} · 매출 기준일 ${sts.map(st => `${st} ~${D[st].last}`).join(" · ")}<br>
         재고반영 원가율 = (기초재고 + 입고 − 기말재고) ÷ Net Sales. 재고·입고 = 드라이브 매장별 Cost Calculation, Net Sales = 매출 대시보드.
@@ -604,7 +604,7 @@ function actualBlock(s, mon, net, theo, rcvSum) {
       ${row("실제 푸드원가 (사용금액)", use == null ? "-" : usd(use, 0), "grp")}
       ${row("실제 푸드원가율", ar == null ? "-" : pct(ar), "grp")}
       ${row("이론원가율", pct(tr))}
-      ${row("차이 (실제 − 이론)", gap == null ? "-" : `<b style="color:${gap > 0.02 ? "var(--red)" : "inherit"}">${gap >= 0 ? "+" : ""}${fmt(gap * 100, 1)}%p</b>`)}
+      ${row("차이 (실제 − 이론)", gap == null ? "-" : `<b style="color:var(--red)">${gap >= 0 ? "+" : ""}${fmt(gap * 100, 1)}%p</b>`)}
       ${row("입고 ÷ Net Sales (참고)", pct(ratio(a.rcv, net)))}
     </tbody></table></div>
     <div class="note">입고·재고 = 드라이브 Cost Calculation 시트 (수신 ${esc(a.updated || "")}). 실제 푸드원가 = 기초재고 + 입고 − 기말재고. 월 중에는 기말재고가 실사 전 값일 수 있습니다.</div>`;
