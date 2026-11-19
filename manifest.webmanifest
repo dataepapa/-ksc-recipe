@@ -1,6 +1,6 @@
 {
-  "name": "KSC USA 레시피북",
-  "short_name": "KSC 레시피",
+  "name": "KSC ERP",
+  "short_name": "KSC ERP",
   "start_url": "./",
   "scope": "./",
   "display": "standalone",

@@ -6,9 +6,9 @@
 <meta name="theme-color" content="#0D2B4E">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-<meta name="apple-mobile-web-app-title" content="KSC 레시피">
+<meta name="apple-mobile-web-app-title" content="KSC ERP">
 <meta name="robots" content="noindex,nofollow">
-<title>KSC 레시피</title>
+<title>KSC ERP</title>
 <link rel="manifest" href="manifest.webmanifest">
 <link rel="icon" href="icon-192.png">
 <link rel="apple-touch-icon" href="icon-192.png">
@@ -134,6 +134,35 @@ main{max-width:980px;margin:0 auto;padding:16px 16px calc(28px + var(--safe-b))}
 #zoom button{position:fixed;top:calc(12px + var(--safe-t));right:12px;background:#fff;border:0;width:40px;height:40px;font-size:20px;color:var(--navy);cursor:pointer}
 #toast{position:fixed;left:50%;bottom:calc(20px + var(--safe-b));transform:translateX(-50%);background:var(--navy);color:#fff;padding:10px 16px;font-size:13px;z-index:60;border-left:4px solid var(--blue);max-width:90vw}
 #loading{padding:60px 20px;text-align:center;color:var(--muted)}
+/* ---------- 첫 화면 (ERP / 레시피) ---------- */
+.big{display:grid;grid-template-columns:1fr;gap:12px}
+@media(min-width:640px){.big{grid-template-columns:1fr 1fr}}
+.bigbtn{background:var(--navy);color:#fff;border:0;border-left:6px solid var(--blue);padding:26px 20px;text-align:left;cursor:pointer;min-height:150px;display:flex;flex-direction:column;justify-content:space-between}
+.bigbtn.alt{background:#fff;color:var(--navy);border:1px solid var(--border);border-left:6px solid var(--navy)}
+.bigbtn:active{opacity:.85}
+.bigbtn .t{font-size:28px;font-weight:700;letter-spacing:1px}
+.bigbtn .e{font-size:13px;opacity:.75;margin-top:4px}
+.bigbtn .n{font-size:12px;font-weight:700;margin-top:14px;color:var(--bluePale)}
+.bigbtn.alt .n{color:var(--blue)}
+/* ---------- ERP ---------- */
+.tabs{display:flex;border-bottom:2px solid var(--navy);margin:14px 0 10px}
+.tab{flex:1;background:#fff;border:1px solid var(--border);border-bottom:0;color:var(--text);padding:10px 4px;font-size:14px;font-weight:700;cursor:pointer}
+.tab.on{background:var(--navy);border-color:var(--navy);color:#fff}
+.kpis3{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}
+@media(min-width:640px){.kpis3{grid-template-columns:repeat(3,minmax(0,1fr))}}
+.kpi .ks{font-size:11px;color:var(--muted);margin-top:2px}
+.kpi.dark .ks{color:var(--bluePale)}
+.dtable tr.go td{cursor:pointer}
+.dtable tr.go:active td{background:var(--tint2)}
+.dtable tr.grp td{background:var(--tint2)!important;color:var(--navy);font-weight:700;text-align:left}
+.dtable tr.grp td.n{text-align:right}
+.dtable tfoot td{border-top:2px solid var(--navy);font-weight:700;color:var(--navy);background:var(--tint2)}
+.dtable td.warn{color:var(--red);font-weight:700}
+.dtable td.mut{color:var(--muted)}
+.dtable th.l{text-align:left}
+.note{font-size:12px;color:var(--muted);margin:8px 0;line-height:1.6}
+.storehead{display:flex;gap:8px;margin-bottom:10px}
+.storehead .chip{font-size:14px;padding:8px 16px;font-weight:700}
 </style>
 </head>
 <body>
@@ -141,7 +170,7 @@ main{max-width:980px;margin:0 auto;padding:16px 16px calc(28px + var(--safe-b))}
 <section id="login" class="hidden">
   <div class="card">
     <div class="brand">KSC USA</div>
-    <h2>레시피북</h2>
+    <h2>KSC ERP</h2>
     <p>이름과 개인 비밀번호를 입력하세요. 한 번 입력하면 이 기기에 기억됩니다.<br><span style="color:var(--muted);font-size:12px">※ 열람 기록(이름·시간·기기)이 남습니다.</span></p>
     <form id="loginForm">
       <input id="nm" type="text" autocomplete="username" placeholder="이름 (예: 홍길동)" style="margin-bottom:8px">
@@ -155,7 +184,7 @@ main{max-width:980px;margin:0 auto;padding:16px 16px calc(28px + var(--safe-b))}
 <div id="app" class="hidden">
   <header class="bar">
     <button class="back hidden" id="backBtn" aria-label="뒤로">‹</button>
-    <h1 id="title">KSC 레시피</h1>
+    <h1 id="title">KSC ERP</h1>
   </header>
   <main id="view"><div id="loading">불러오는 중…</div></main>
 </div>
@@ -245,7 +274,7 @@ async function start(ev) {
   const res = await fetch("data.bin?v=" + META.ver);
   DATA = JSON.parse(new TextDecoder().decode(await decrypt(await res.arrayBuffer())));
   const last = store.get("ksc_seen_ver");
-  if (last && last !== META.ver) toast("새 레시피 자료로 업데이트되었습니다 (" + DATA.meta.builtAt + ")");
+  if (last && last !== META.ver) toast("새 자료로 업데이트되었습니다 (" + DATA.meta.builtAt + ")");
   store.set("ksc_seen_ver", META.ver);
   logEvent(ev, "");
   route();
@@ -368,25 +397,158 @@ function route() {
     return recipeView(v, p[1], +p[2], +(p[3] || 0));
   }
   if (p[0] === "t" && CATS[p[1]]) { logEvent("표", CATS[p[1]].title); return tableView(v, p[1]); }
+  if (p[0] === "recipe") return recipeHome(v);
+  if (p[0] === "erp") {
+    if (p[1] && ERP()?.stores?.[p[1]]) { logEvent("ERP", p[1] + (p[2] ? " " + p[2] : "")); return erpStoreView(v, p[1], p[2], p[3], p[4]); }
+    return erpHome(v);
+  }
   homeView(v);
 }
 
-/* ---------- 홈 ---------- */
+/* ---------- 첫 화면: ERP / 레시피 ---------- */
 function homeView(v) {
-  setBar("KSC 레시피", false);
+  setBar("KSC ERP", false);
+  const m = DATA.meta, e = ERP();
+  const stores = e ? Object.keys(e.stores) : [];
+  v.innerHTML = `
+    <div class="hero"><div class="k">KSC USA</div><h2>KSC ERP</h2>
+      <div class="v">원가관리 · 레시피 — 업데이트 ${esc(m.builtAt)}</div></div>
+    <div class="big">
+      <button class="bigbtn" onclick="location.hash='#/erp'"><div><div class="t">ERP</div>
+        <div class="e">매장별 매출 · P-Mix · 이론원가</div></div><div class="n">${stores.length ? stores.join(" · ") : "자료 없음"} ›</div></button>
+      <button class="bigbtn alt" onclick="location.hash='#/recipe'"><div><div class="t">레시피</div>
+        <div class="e">메뉴 · 런치 · 원재료단가 · 전처리</div></div><div class="n">레시피 ${fmtMonth(m.recipeMonth)} · 메뉴 ${count("menus") + count("lunch")}개 ›</div></button>
+    </div>
+    <div class="foot"><b style="color:var(--navy)">${esc(USER)}</b> 님으로 접속 중<br>
+      <button id="logout">이 기기에서 로그아웃</button></div>`;
+  document.getElementById("logout").onclick = () => { logEvent("로그아웃", ""); store.del(LS_KEK); setTimeout(() => location.reload(), 300); };
+}
+
+/* ---------- 레시피 홈 ---------- */
+function recipeHome(v) {
+  setBar("레시피", true);
   const m = DATA.meta;
   const tile = (k, main) => `<button class="tile${main ? " main" : ""}" onclick="location.hash='#/${CATS[k].kind === "table" ? "t" : "list"}/${k}'">
       <div><div class="t">${CATS[k].title}</div><div class="e">${CATS[k].en}</div></div><div class="n">${count(k)}개 ›</div></button>`;
   v.innerHTML = `
-    <div class="hero"><div class="k">KSC USA</div><h2>레시피북</h2>
+    <div class="hero"><div class="k">KSC USA · RECIPE</div><h2>레시피</h2>
       <div class="v">레시피 ${fmtMonth(m.recipeMonth)} · 런치메뉴 ${fmtMonth(m.lunchMonth)}</div></div>
     <div class="sec">메뉴 레시피</div>
     <div class="grid">${tile("menus", true)}${tile("lunch", true)}</div>
     <div class="sec">원가 · 전처리</div>
     <div class="grid">${tile("ingredients")}${tile("yield")}${tile("prepCost")}${tile("prepRecipes")}</div>
-    <div class="foot"><b style="color:var(--navy)">${esc(USER)}</b> 님으로 접속 중<br>원본: ${m.sources.map(esc).join("<br>")}<br>업데이트 ${esc(m.builtAt)}<br>
-      <button id="logout">이 기기에서 로그아웃</button></div>`;
-  document.getElementById("logout").onclick = () => { logEvent("로그아웃", ""); store.del(LS_KEK); setTimeout(() => location.reload(), 300); };
+    <div class="foot">원본: ${m.sources.map(esc).join("<br>")}${m.priceNote ? "<br>" + esc(m.priceNote) : ""}<br>업데이트 ${esc(m.builtAt)}</div>`;
+}
+
+/* ---------- ERP ---------- */
+const ERP = () => DATA && DATA.erp;
+const monLabel = ym => `${ym.slice(0, 4)}년 ${+ym.slice(5, 7)}월`;
+const ratio = (a, b) => b ? a / b : null;
+function erpHome(v) {
+  setBar("ERP", true);
+  const e = ERP();
+  if (!e || !Object.keys(e.stores).length) { v.innerHTML = `<div class="empty">ERP 자료가 아직 없습니다</div>`; return; }
+  v.innerHTML = `
+    <div class="hero"><div class="k">KSC USA · ERP</div><h2>매장 선택</h2>
+      <div class="v">매출 기준 ${esc(String(e.generatedAt || "").replace("T", " ").slice(0, 16))} · 매장별로 따로 관리</div></div>
+    <div class="big">${Object.entries(e.stores).map(([st, s], i) => {
+      const mon = s.months[s.months.length - 1];
+      const ds = s.days.filter(x => x.d.startsWith(mon));
+      const net = ds.reduce((a, x) => a + (x.net || 0), 0), food = ds.reduce((a, x) => a + x.food, 0), theo = ds.reduce((a, x) => a + x.theo, 0);
+      return `<button class="bigbtn${i ? " alt" : ""}" onclick="location.hash='#/erp/${st}'"><div><div class="t">${st}</div>
+        <div class="e">KSC ${st} · ${monLabel(mon)} (~${s.lastDate.slice(5)})</div></div>
+        <div class="n">Net ${usd(net, 0)} · 이론원가율 ${pct(ratio(theo, food))} ›</div></button>`;
+    }).join("")}</div>
+    <div class="note">· Net Sales·P-Mix = 글로벌 매출 대시보드 (POS) 자동 수신<br>
+      · 이론원가 = P-Mix(Food) 판매수량 × 메뉴 단위원가 — 단위원가·POS↔레시피 연결은 ERP 스프레드시트 '5-2 POS매핑' 기준<br>
+      · 이론원가율 = 이론원가 ÷ Food 매출(P-Mix)</div>`;
+}
+// 기간 P-Mix 집계: itemIdx → [qty, sales]
+function erpAgg(s, dates) {
+  const m = new Map();
+  dates.forEach(d => (s.dayItems[d] || []).forEach(([i, q, sl]) => {
+    const a = m.get(i) || [0, 0]; a[0] += q; a[1] += sl; m.set(i, a);
+  }));
+  return m;
+}
+function pmixTable(s, agg) {
+  const groups = new Map();
+  agg.forEach(([q, sl], i) => {
+    const it = s.items[i], cost = it[2] != null ? q * it[2] : null;
+    if (!groups.has(it[0])) groups.set(it[0], []);
+    groups.get(it[0]).push({ it, q, sl, cost });
+  });
+  const tot = { q: 0, sl: 0, c: 0 };
+  const gl = [...groups.entries()].map(([g, rows]) => {
+    const gq = rows.reduce((a, r) => a + r.q, 0), gs = rows.reduce((a, r) => a + r.sl, 0), gc = rows.reduce((a, r) => a + (r.cost || 0), 0);
+    tot.q += gq; tot.sl += gs; tot.c += gc;
+    rows.sort((a, b) => (b.cost || 0) - (a.cost || 0) || b.q - a.q);
+    return { g, rows, gq, gs, gc };
+  }).sort((a, b) => b.gc - a.gc);
+  const body = gl.map(({ g, rows, gq, gs, gc }) => `
+    <tr class="grp"><td>${esc(g)}</td><td class="n">${qtyFmt(gq)}</td><td class="n">${usd(gs, 0)}</td><td></td><td class="n">${usd(gc, 0)}</td><td class="n">${pct(ratio(gc, gs))}</td></tr>
+    ${rows.map(({ it, q, sl, cost }) => `<tr><td class="l">${esc(it[1])}${it[4] ? ` <span style="color:${it[4] === "제외" ? "var(--muted)" : "var(--red)"};font-size:11px">[${it[4]}]</span>` : ""}</td>
+      <td>${qtyFmt(q)}</td><td>${usd(sl, 0)}</td><td class="${it[2] == null ? "warn" : ""}">${it[2] == null ? "?" : usd(it[2])}</td>
+      <td class="q">${cost == null ? "-" : usd(cost, 0)}</td><td>${pct(ratio(cost, sl))}</td></tr>`).join("")}`).join("");
+  return `<div class="tbl-wrap"><table class="dtable"><thead><tr><th class="l">메뉴 (Menu Group)</th><th>수량</th><th>매출</th><th>단위원가</th><th>이론원가</th><th>원가율</th></tr></thead>
+    <tbody>${body || `<tr><td colspan="6" class="l" style="text-align:center;padding:24px">판매 기록 없음</td></tr>`}</tbody>
+    <tfoot><tr><td class="l">합계</td><td>${qtyFmt(tot.q)}</td><td>${usd(tot.sl, 0)}</td><td></td><td>${usd(tot.c, 0)}</td><td>${pct(ratio(tot.c, tot.sl))}</td></tr></tfoot></table></div>`;
+}
+function erpKpis(net, food, theo, days, label) {
+  return `<div class="kpis3">
+    <div class="kpi dark"><div class="kl">Net Sales ${label}</div><div class="kv">${usd(net, 0)}</div>${days > 1 ? `<div class="ks">${days}일 · 일평균 ${usd(net / days, 0)}</div>` : ""}</div>
+    <div class="kpi"><div class="kl">Food 매출 (P-Mix)</div><div class="kv">${usd(food, 0)}</div><div class="ks">Net 대비 ${pct(ratio(food, net))}</div></div>
+    <div class="kpi"><div class="kl">이론원가</div><div class="kv">${usd(theo, 0)}</div><div class="ks">Net 대비 ${pct(ratio(theo, net))}</div></div>
+    <div class="kpi alert"><div class="kl">이론원가율 (Food 대비)</div><div class="kv">${pct(ratio(theo, food))}</div></div>
+  </div>`;
+}
+function erpStoreView(v, st, mon, tab, arg) {
+  const e = ERP(), s = e.stores[st];
+  mon = s.months.includes(mon) ? mon : s.months[s.months.length - 1];
+  const others = Object.keys(e.stores);
+  const head = `<div class="storehead">${others.map(x => `<button class="chip${x === st ? " on" : ""}" onclick="location.replace('#/erp/${x}/${mon}/${tab || "daily"}')">${x}</button>`).join("")}</div>`;
+  if (tab === "day" && arg) {   // 하루 P-Mix
+    const x = s.days.find(d => d.d === arg) || { d: arg, net: null, food: 0, theo: 0, w: "" };
+    setBar(`${st} <span class="sub">${arg.slice(5)} (${esc(x.w)})</span>`, true);
+    const i = s.days.findIndex(d => d.d === arg);
+    v.innerHTML = `${head}${erpKpis(x.net || 0, x.food, x.theo, 1, `${arg} (${x.w})`)}
+      ${x.guests != null ? `<div class="note">손님 ${fmt(x.guests)}명 · 계산 ${fmt(x.checks)}건</div>` : ""}
+      <div class="sec">${arg} P-MIX · 이론원가</div>${pmixTable(s, erpAgg(s, [arg]))}
+      <div class="nav"><button id="pd" ${i <= 0 ? "disabled" : ""}>‹ 전날</button><div class="pg"></div><button id="nd" ${i < 0 || i >= s.days.length - 1 ? "disabled" : ""}>다음날 ›</button></div>`;
+    const go = j => location.replace(`#/erp/${st}/${s.days[j].d.slice(0, 7)}/day/${s.days[j].d}`);
+    document.getElementById("pd").onclick = () => go(i - 1);
+    document.getElementById("nd").onclick = () => go(i + 1);
+    return;
+  }
+  tab = ["daily", "pmix", "map"].includes(tab) ? tab : "daily";
+  setBar(`${st} <span class="sub">${monLabel(mon)}</span>`, true);
+  const ds = s.days.filter(x => x.d.startsWith(mon));
+  const net = ds.reduce((a, x) => a + (x.net || 0), 0), food = ds.reduce((a, x) => a + x.food, 0), theo = ds.reduce((a, x) => a + x.theo, 0);
+  const open = ds.filter(x => x.net).length;
+  const agg = erpAgg(s, ds.map(x => x.d));
+  const unm = [...agg.entries()].filter(([i]) => s.items[i][4] === "매핑필요" || s.items[i][4] === "원가없음");
+  let body = "";
+  if (tab === "daily") {
+    body = `<div class="tbl-wrap"><table class="dtable"><thead><tr><th>일자</th><th>Net Sales</th><th>Food</th><th>이론원가</th><th>원가율</th></tr></thead><tbody>
+      ${ds.slice().reverse().map(x => `<tr class="go" onclick="location.hash='#/erp/${st}/${mon}/day/${x.d}'">
+        <td style="text-align:left">${x.d.slice(5)} <span style="color:var(--muted)">${esc(x.w)}</span></td>
+        <td class="q">${x.net == null ? "-" : usd(x.net, 0)}</td><td>${usd(x.food, 0)}</td><td>${usd(x.theo, 0)}</td><td>${pct(ratio(x.theo, x.food))}</td></tr>`).join("")}</tbody>
+      <tfoot><tr><td style="text-align:left">합계</td><td>${usd(net, 0)}</td><td>${usd(food, 0)}</td><td>${usd(theo, 0)}</td><td>${pct(ratio(theo, food))}</td></tr></tfoot></table></div>
+      <div class="note">행을 누르면 그날의 메뉴별 P-Mix·이론원가를 봅니다.</div>`;
+  } else if (tab === "pmix") {
+    body = `<div class="note">${monLabel(mon)} 누계 · Menu Group별 (이론원가 큰 순)</div>${pmixTable(s, agg)}`;
+  } else {
+    body = `<div class="note">아래 메뉴는 레시피와 연결되지 않아 이론원가에 빠져 있습니다. ERP 스프레드시트 <b>KSC ERP ${st}.xlsx → 5-2 POS매핑</b>에서 레시피를 고르거나 수동 단위원가를 입력하면 다음 업데이트 때 반영됩니다.<br>매핑 기준: ${esc(s.mapUpdated)}</div>
+      <div class="tbl-wrap"><table class="dtable"><thead><tr><th class="l">POS 메뉴</th><th class="l">Menu Group</th><th>수량</th><th>매출</th><th>상태</th></tr></thead><tbody>
+      ${unm.sort((a, b) => b[1][1] - a[1][1] || b[1][0] - a[1][0]).map(([i, [q, sl]]) => `<tr><td class="l">${esc(s.items[i][1])}</td><td class="l mut">${esc(s.items[i][0])}</td><td>${qtyFmt(q)}</td><td>${usd(sl, 0)}</td><td class="warn">${s.items[i][4]}</td></tr>`).join("")
+        || `<tr><td colspan="5" class="l" style="text-align:center;padding:24px">모두 연결됨</td></tr>`}</tbody></table></div>`;
+  }
+  v.innerHTML = `${head}
+    <div class="chips">${s.months.slice().reverse().map(m => `<button class="chip${m === mon ? " on" : ""}" onclick="location.replace('#/erp/${st}/${m}/${tab}')">${monLabel(m)}</button>`).join("")}</div>
+    ${erpKpis(net, food, theo, open, monLabel(mon).slice(6) + " 누계")}
+    <div class="tabs">${[["daily", "일별"], ["pmix", "메뉴 P-Mix"], ["map", `매핑필요 ${unm.length}`]].map(([k, t]) => `<button class="tab${k === tab ? " on" : ""}" onclick="location.replace('#/erp/${st}/${mon}/${k}')">${t}</button>`).join("")}</div>
+    ${body}
+    <div class="foot">매출 기준 ${esc(String(e.generatedAt || "").replace("T", " ").slice(0, 16))} · 마지막 영업일 ${esc(s.lastDate)}</div>`;
 }
 const fmtMonth = s => s ? `${s.slice(0, 4)}.${s.slice(4)}` : "-";
 
